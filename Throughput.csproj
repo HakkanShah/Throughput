@@ -11,12 +11,16 @@
     <!-- Assembly Information -->
     <AssemblyName>Throughput</AssemblyName>
     <RootNamespace>Throughput</RootNamespace>
-    <Version>1.0.0</Version>
+    <Version>2.0.0</Version>
     <Authors>Hakkan</Authors>
     <Company></Company>
     <Product>Throughput</Product>
-    <Description>Real-time network speed overlay for Windows</Description>
+    <Description>Real-time network speed monitor with on-demand bandwidth testing for Windows</Description>
     <Copyright>Copyright © 2025</Copyright>
+    
+    <!-- Application Icon (uncomment when app.ico exists)
+    <ApplicationIcon>Assets\app.ico</ApplicationIcon>
+    -->
     
     <!-- Publishing Options -->
     <PublishSingleFile>true</PublishSingleFile>
@@ -28,5 +32,11 @@
     <!-- Suppress console window -->
     <DisableWinExeOutputInference>false</DisableWinExeOutputInference>
   </PropertyGroup>
+
+  <!-- Include Assets -->
+  <ItemGroup>
+    <Resource Include="Assets\app.ico" Condition="Exists('Assets\app.ico')" />
+    <Content Include="Assets\**" CopyToOutputDirectory="PreserveNewest" Condition="Exists('Assets\')" />
+  </ItemGroup>
 
 </Project>

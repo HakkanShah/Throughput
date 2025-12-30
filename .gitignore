@@ -55,3 +55,7 @@ TestResults/
 
 # JetBrains Rider
 *.sln.iml
+
+# Local documentation (not for repo)
+Installer/README.md
+Packaging/README.md
