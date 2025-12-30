@@ -18,9 +18,8 @@
     <Description>Real-time network speed monitor with on-demand bandwidth testing for Windows</Description>
     <Copyright>Copyright © 2025</Copyright>
     
-    <!-- Application Icon (uncomment when app.ico exists)
+    <!-- Application Icon -->
     <ApplicationIcon>Assets\app.ico</ApplicationIcon>
-    -->
     
     <!-- Publishing Options -->
     <PublishSingleFile>true</PublishSingleFile>
