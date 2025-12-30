@@ -1,0 +1,57 @@
+# Build outputs
+bin/
+obj/
+publish/
+publish-x86/
+
+# IDE
+.vs/
+.vscode/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# User-specific files
+*.rsuser
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Rider
+.idea/
+*.sln.iml
+
+# Visual Studio Code
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# NuGet
+*.nupkg
+*.snupkg
+.nuget/
+packages/
+
+# Logs
+*.log
+
+# Test results
+TestResults/
+
+# JetBrains Rider
+*.sln.iml
