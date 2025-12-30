@@ -2,13 +2,6 @@
 
 A lightweight Windows utility that displays **real-time network speed** as an always-on-top overlay, plus an **on-demand bandwidth speed test** — all without any external services or data collection.
 
-<table align="center">
-  <tr>
-    <td align="center"><img src="docs/screenshot-overlay.png" alt="Overlay Window" width="180"/><br/><em>Overlay (Always-on-top)</em></td>
-    <td align="center"><img src="docs/screenshot-dashboard.png" alt="Dashboard Window" width="280"/><br/><em>Dashboard</em></td>
-  </tr>
-</table>
-
 ## ✨ Features
 
 ### Live Network Throughput (Always Running)
@@ -20,27 +13,30 @@ A lightweight Windows utility that displays **real-time network speed** as an al
 
 ### On-Demand Speed Test
 - 📈 **Bandwidth measurement** — Tests actual internet speed, not just local network
-- ↓↑ **Download & Upload** — Measures both directions
+- ↓↑ **Download & Upload** — Measures both directions with MB/s equivalents
 - ⏱️ **Latency (Ping)** — Measures network response time
 - 🔗 **Multi-connection** — Uses parallel connections for accurate results
 - 🎯 **Warm-up exclusion** — Ignores initial TCP ramp-up for accuracy
-- ⏳ **~10 second test** — Quick but reliable results
 
 ### Dual-Window Design
-- **Overlay Mode** — Small, minimal, always visible
+- **Overlay Mode** — Small, minimal, transparent, always visible
 - **Dashboard Mode** — Full window with speed test controls and detailed results
 
 ## 📥 Download & Install
 
-### Option 1: Portable (Recommended)
+### Option 1: Installer (Recommended)
+1. Download `Throughput-Setup-2.0.0.exe` from [Releases](https://github.com/HakkanShah/Throughput/releases)
+2. Run the installer
+3. Choose options:
+   - ✅ Create desktop shortcut
+   - ✅ Pin to taskbar
+   - ✅ Start with Windows
+4. Find "Throughput" in your Start Menu
+
+### Option 2: Portable
 1. Download `Throughput.exe` from [Releases](https://github.com/HakkanShah/Throughput/releases)
 2. Double-click to run — no installation needed
 3. The overlay appears at the bottom-right of your screen
-
-### Option 2: MSIX Installer (Windows 10/11)
-1. Download `Throughput.msix` from [Releases](https://github.com/HakkanShah/Throughput/releases)
-2. Double-click to install
-3. Find "Throughput" in your Start Menu
 
 ## 🖥️ System Requirements
 
@@ -49,44 +45,43 @@ A lightweight Windows utility that displays **real-time network speed** as an al
 | **OS** | Windows 10 (1809+) or Windows 11 |
 | **Architecture** | x64 (64-bit) |
 | **RAM** | ~50 MB |
-| **Storage** | ~100 MB (portable) |
+| **Storage** | ~100 MB |
 
 ## 📖 Usage
 
 ### Overlay Window
-- **Speed Test**: Click "⚡ Test Speed" to run bandwidth test
-- **Dashboard**: Click "Open Dashboard" for full controls
-- **Move**: Drag anywhere on screen
-- **Close**: Click ✕ or right-click tray icon → Exit
+- **More Details** — Click to open the full dashboard
+- **Move** — Drag anywhere on screen
+- **Close** — Click ✕ or right-click tray icon → Exit
 
 ### Dashboard Window
-- **Live Throughput**: View current network activity
-- **Speed Test**: Click button, wait ~30 seconds for full results
-- **Results**: Download speed, upload speed, and latency
+- **Live Throughput** — View current network activity in real-time
+- **Speed Test** — Click button to measure your internet bandwidth
+- **Results** — Download (Mbps + MB/s), Upload (Mbps + MB/s), and Latency (ms)
 
 ### System Tray
-- **Double-click**: Open Dashboard
-- **Right-click**: Menu with Show Overlay, Open Dashboard, Exit
+- **Double-click** — Open Dashboard
+- **Right-click** — Menu with Show Overlay, Open Dashboard, Exit
 
 ## 🔬 Live Throughput vs Speed Test
 
 | Feature | Live Throughput | Speed Test |
 |---------|-----------------|------------|
 | **What it measures** | Current network activity | Maximum bandwidth capacity |
+| **Unit displayed** | MB/s or KB/s | Mbps (+ MB/s equivalent) |
 | **Data source** | Windows Performance Counters | HTTP downloads/uploads |
-| **Update frequency** | Every 1 second | On-demand (~30s test) |
-| **Internet required** | No (any network traffic) | Yes |
-| **Accuracy** | Exact (local measurement) | Estimation (varies by server) |
+| **Update frequency** | Every 1 second | On-demand (~10s test) |
+| **Internet required** | No | Yes |
 | **Use case** | Monitor real usage | Check internet speed |
 
-> **Note**: Speed test results are labeled as "Quick bandwidth estimation — results may vary" because actual speeds depend on many factors including server load, time of day, and network conditions.
+> **MB/s vs Mbps**: ISPs advertise in Mbps (megabits). File downloads show MB/s (megabytes). Divide Mbps by 8 to get MB/s (e.g., 100 Mbps ≈ 12.5 MB/s).
 
 ## 🔒 Privacy
 
 **No telemetry. No data collection. No accounts.**
 
 - All measurements happen locally
-- Speed test uses standard public CDN endpoints (Cloudflare)
+- Speed test uses public CDN endpoints (Cloudflare)
 - No data is sent anywhere except the speed test servers
 - No analytics, tracking, or phone-home features
 - Open source — verify the code yourself
@@ -110,6 +105,7 @@ Test endpoints: `speed.cloudflare.com` (global CDN, reliable, no API key needed)
 
 ### Prerequisites
 - [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
+- [Inno Setup](https://jrsoftware.org/isinfo.php) (for installer)
 
 ### Build Commands
 
@@ -125,12 +121,10 @@ dotnet build
 dotnet run
 
 # Publish portable executable
-.\publish-portable.ps1
-# Output: ./publish/portable/Throughput.exe
+dotnet publish -c Release -o publish
 
-# Prepare for MSIX packaging
-.\publish-msix.ps1
-# Output: ./publish/msix-layout/
+# Build installer (requires Inno Setup)
+& "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" Installer\setup.iss
 ```
 
 ### Project Structure
@@ -149,24 +143,9 @@ Throughput/
 ├── Helpers/
 │   └── SpeedFormatter.cs      # Speed formatting utilities
 ├── Assets/                     # Icons and resources
-├── Packaging/                  # MSIX configuration
+├── Installer/                  # Inno Setup configuration
 ├── App.xaml                    # Application entry
 └── Throughput.csproj          # Project configuration
-```
-
-## 🚀 Add to Windows Startup
-
-To run Throughput automatically when Windows starts:
-
-### Method 1: Startup Folder
-1. Press `Win + R`, type `shell:startup`, press Enter
-2. Create a shortcut to `Throughput.exe` in the opened folder
-
-### Method 2: Registry (PowerShell)
-```powershell
-$path = "C:\Path\To\Throughput.exe"
-New-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run" `
-    -Name "Throughput" -Value $path -PropertyType String -Force
 ```
 
 ## 📄 License
