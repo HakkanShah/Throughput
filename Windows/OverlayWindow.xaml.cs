@@ -1,33 +1,21 @@
-using System.Drawing;
 using System.Windows;
-using System.Windows.Forms;
 using System.Windows.Input;
 using System.Windows.Threading;
 using Throughput.Helpers;
-using Throughput.Models;
-using Throughput.Services;
-using Application = System.Windows.Application;
 
 namespace Throughput.Windows;
 
 /// <summary>
-/// Small overlay window displaying live network throughput
-/// Always-on-top, minimal UI
+/// Full overlay window displaying live network throughput
+/// Always-on-top, with header and "More Details" link
 /// </summary>
 public partial class OverlayWindow : Window
 {
-    private readonly NetworkSpeedMonitor _networkMonitor;
-    private readonly SpeedTestService _speedTestService;
     private readonly DispatcherTimer _updateTimer;
-    private readonly NotifyIcon _trayIcon;
 
     public OverlayWindow()
     {
         InitializeComponent();
-
-        // Initialize services
-        _networkMonitor = new NetworkSpeedMonitor();
-        _speedTestService = new SpeedTestService();
 
         // Set up update timer (1 second interval)
         _updateTimer = new DispatcherTimer
@@ -35,9 +23,6 @@ public partial class OverlayWindow : Window
             Interval = TimeSpan.FromSeconds(1)
         };
         _updateTimer.Tick += UpdateTimer_Tick;
-
-        // Set up system tray icon
-        _trayIcon = CreateTrayIcon();
 
         // Position window
         PositionWindow();
@@ -48,21 +33,14 @@ public partial class OverlayWindow : Window
     }
 
     /// <summary>
-    /// Access to the speed test service for the main dashboard
-    /// </summary>
-    public SpeedTestService SpeedTestService => _speedTestService;
-
-    /// <summary>
-    /// Access to the network monitor for the main dashboard
-    /// </summary>
-    public NetworkSpeedMonitor NetworkMonitor => _networkMonitor;
-
-    /// <summary>
     /// Updates the speed display
     /// </summary>
     private void UpdateTimer_Tick(object? sender, EventArgs e)
     {
-        var (download, upload) = _networkMonitor.GetCurrentSpeed();
+        var monitor = App.NetworkMonitor;
+        if (monitor == null) return;
+
+        var (download, upload) = monitor.GetCurrentSpeed();
 
         DownloadSpeedText.Text = SpeedFormatter.FormatBytesPerSecond(download);
         UploadSpeedText.Text = SpeedFormatter.FormatBytesPerSecond(upload);
@@ -76,68 +54,6 @@ public partial class OverlayWindow : Window
         var workArea = SystemParameters.WorkArea;
         Left = workArea.Right - Width - 10;
         Top = workArea.Bottom - Height - 10;
-    }
-
-    /// <summary>
-    /// Creates the system tray icon with context menu
-    /// </summary>
-    private NotifyIcon CreateTrayIcon()
-    {
-        var icon = new NotifyIcon
-        {
-            Icon = LoadTrayIcon(),
-            Visible = true,
-            Text = "Throughput - Network Speed Monitor"
-        };
-
-        // Create context menu
-        var contextMenu = new ContextMenuStrip();
-
-        var showOverlay = new ToolStripMenuItem("Show Overlay");
-        showOverlay.Click += (s, e) =>
-        {
-            Show();
-            WindowState = WindowState.Normal;
-            Activate();
-        };
-
-        var openDashboard = new ToolStripMenuItem("Open Dashboard");
-        openDashboard.Click += (s, e) => App.ShowMainWindow();
-
-        var separator = new ToolStripSeparator();
-
-        var exitItem = new ToolStripMenuItem("Exit");
-        exitItem.Click += (s, e) => ExitApplication();
-
-        contextMenu.Items.Add(showOverlay);
-        contextMenu.Items.Add(openDashboard);
-        contextMenu.Items.Add(separator);
-        contextMenu.Items.Add(exitItem);
-        icon.ContextMenuStrip = contextMenu;
-
-        // Double-click to open dashboard
-        icon.DoubleClick += (s, e) => App.ShowMainWindow();
-
-        return icon;
-    }
-
-    /// <summary>
-    /// Loads the tray icon
-    /// </summary>
-    private static Icon LoadTrayIcon()
-    {
-        try
-        {
-            // Try to load custom icon
-            var iconPath = System.IO.Path.Combine(AppContext.BaseDirectory, "Assets", "app.ico");
-            if (System.IO.File.Exists(iconPath))
-            {
-                return new Icon(iconPath);
-            }
-        }
-        catch { }
-
-        return SystemIcons.Application;
     }
 
     /// <summary>
@@ -157,7 +73,7 @@ public partial class OverlayWindow : Window
     private void CloseButton_Click(object sender, MouseButtonEventArgs e)
     {
         e.Handled = true;
-        ExitApplication();
+        App.ExitApplication();
     }
 
     /// <summary>
@@ -174,27 +90,7 @@ public partial class OverlayWindow : Window
     /// </summary>
     private void OverlayWindow_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
     {
-        CleanupResources();
-    }
-
-    /// <summary>
-    /// Cleans up all resources
-    /// </summary>
-    private void CleanupResources()
-    {
         _updateTimer.Stop();
-        _trayIcon.Visible = false;
-        _trayIcon.Dispose();
-        _networkMonitor.Dispose();
-        _speedTestService.Dispose();
-    }
-
-    /// <summary>
-    /// Exits the application
-    /// </summary>
-    private void ExitApplication()
-    {
-        CleanupResources();
-        Application.Current.Shutdown();
     }
 }
+
