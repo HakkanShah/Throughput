@@ -26,16 +26,40 @@ public partial class MainAppWindow : Window
         };
         _updateTimer.Tick += UpdateTimer_Tick;
 
-        // Subscribe to speed test events from the overlay's shared service
-        var speedTestService = App.OverlayWindow?.SpeedTestService;
+        // Subscribe to speed test events from the shared service
+        var speedTestService = App.SpeedTestService;
         if (speedTestService != null)
         {
             speedTestService.ProgressChanged += OnSpeedTestProgress;
             speedTestService.TestCompleted += OnSpeedTestCompleted;
         }
 
+        // Initialize widget selector
+        InitializeWidgetSelector();
+
         Loaded += (s, e) => _updateTimer.Start();
         Closing += MainAppWindow_Closing;
+    }
+
+    /// <summary>
+    /// Initializes the widget selector UI
+    /// </summary>
+    private void InitializeWidgetSelector()
+    {
+        // Set the current widget as selected
+        UpdateWidgetSelectorUI();
+    }
+
+    /// <summary>
+    /// Updates widget selector to reflect current selection
+    /// </summary>
+    private void UpdateWidgetSelectorUI()
+    {
+        var currentType = App.CurrentWidgetType;
+        FullWidgetRadio.IsChecked = currentType == WidgetType.Full;
+        CompactWidgetRadio.IsChecked = currentType == WidgetType.Compact;
+        MinimalWidgetRadio.IsChecked = currentType == WidgetType.Minimal;
+        SpeedTestWidgetRadio.IsChecked = currentType == WidgetType.SpeedTest;
     }
 
     /// <summary>
@@ -45,7 +69,7 @@ public partial class MainAppWindow : Window
     {
         if (_isTestRunning) return;
 
-        var monitor = App.OverlayWindow?.NetworkMonitor;
+        var monitor = App.NetworkMonitor;
         if (monitor == null) return;
 
         var (download, upload) = monitor.GetCurrentSpeed();
@@ -59,7 +83,7 @@ public partial class MainAppWindow : Window
     /// </summary>
     private async void SpeedTestButton_Click(object sender, RoutedEventArgs e)
     {
-        var speedTestService = App.OverlayWindow?.SpeedTestService;
+        var speedTestService = App.SpeedTestService;
         if (speedTestService == null || speedTestService.IsRunning) return;
 
         _isTestRunning = true;
@@ -217,7 +241,7 @@ public partial class MainAppWindow : Window
         _updateTimer.Stop();
 
         // Unsubscribe from events
-        var speedTestService = App.OverlayWindow?.SpeedTestService;
+        var speedTestService = App.SpeedTestService;
         if (speedTestService != null)
         {
             speedTestService.ProgressChanged -= OnSpeedTestProgress;
@@ -228,4 +252,19 @@ public partial class MainAppWindow : Window
         e.Cancel = true;
         Hide();
     }
+
+    /// <summary>
+    /// Handles widget selection change
+    /// </summary>
+    private void WidgetRadio_Checked(object sender, RoutedEventArgs e)
+    {
+        if (sender is System.Windows.Controls.RadioButton radio && radio.Tag is string tagStr)
+        {
+            if (Enum.TryParse<WidgetType>(tagStr, out var widgetType))
+            {
+                App.SwitchWidget(widgetType, saveAsDefault: true);
+            }
+        }
+    }
 }
+
