@@ -5,6 +5,7 @@
         SizeToContent="WidthAndHeight"
         WindowStyle="None"
         AllowsTransparency="True"
+        Foreground="White"
         Background="Transparent"
         Topmost="True"
         ShowInTaskbar="False"
@@ -17,7 +18,7 @@
     <!-- Compact Container - Transparent with subtle border on hover -->
     <Border x:Name="MainBorder"
             CornerRadius="8" 
-            Background="#40080810"
+            Background="#80000000"
             BorderBrush="Transparent"
             BorderThickness="1"
             Padding="10,6">

@@ -12,31 +12,77 @@
         ResizeMode="CanResizeWithGrip">
     
     <Window.Resources>
+        <!-- Card Style -->
+        <Style x:Key="CardStyle" TargetType="Border">
+            <Setter Property="Background" Value="#1a1a2e"/>
+            <Setter Property="CornerRadius" Value="12"/>
+            <Setter Property="Padding" Value="16"/>
+            <Setter Property="Margin" Value="0,0,0,12"/>
+            <Setter Property="Effect">
+                <Setter.Value>
+                    <DropShadowEffect Color="Black" BlurRadius="10" ShadowDepth="2" Opacity="0.3"/>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <!-- Primary Button Style -->
         <Style x:Key="PrimaryButton" TargetType="Button">
-            <Setter Property="Background" Value="#3b82f6"/>
             <Setter Property="Foreground" Value="White"/>
-            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontSize" Value="12"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="Padding" Value="16,10"/>
+            <Setter Property="Padding" Value="12,8"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border x:Name="border" 
-                                Background="{TemplateBinding Background}" 
-                                CornerRadius="10"
-                                Padding="{TemplateBinding Padding}">
+                        <Border x:Name="border" CornerRadius="10" Padding="{TemplateBinding Padding}">
+                            <Border.Background>
+                                <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                    <GradientStop Color="#3b82f6" Offset="0"/>
+                                    <GradientStop Color="#2563eb" Offset="1"/>
+                                </LinearGradientBrush>
+                            </Border.Background>
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="border" Property="Background" Value="#2563eb"/>
+                                <Setter TargetName="border" Property="Opacity" Value="0.9"/>
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
-                                <Setter TargetName="border" Property="Background" Value="#374151"/>
-                                <Setter Property="Foreground" Value="#6b7280"/>
+                                <Setter TargetName="border" Property="Opacity" Value="0.6"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Widget Radio Style -->
+        <Style x:Key="WidgetRadio" TargetType="RadioButton">
+            <Setter Property="Foreground" Value="#CBD5E1"/> <!-- Whiter text -->
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Margin" Value="0,0,8,0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RadioButton">
+                        <Border x:Name="border" 
+                                Background="Transparent" 
+                                BorderBrush="#475569"
+                                BorderThickness="1"
+                                CornerRadius="6"
+                                Padding="12,8">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#1e3a8a"/>
+                                <Setter TargetName="border" Property="BorderBrush" Value="#3b82f6"/>
+                                <Setter Property="Foreground" Value="White"/>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="BorderBrush" Value="#94A3B8"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -45,11 +91,10 @@
         </Style>
     </Window.Resources>
     
-    <!-- Main container with transparent background -->
-    <Border Background="#C0080810" CornerRadius="12"
+    <!-- Main container with glass effect -->
+    <Border Background="#90080810" CornerRadius="12"
             MouseLeftButtonDown="Window_MouseLeftButtonDown">
         
-        <!-- Use Viewbox to scale content proportionally -->
         <Viewbox Stretch="Uniform" StretchDirection="Both">
             <Grid Width="440" Margin="20,16">
                 <Grid.RowDefinitions>
@@ -65,25 +110,24 @@
                 <!-- WINDOW CONTROLS -->
                 <Grid Grid.Row="0" Margin="0,0,0,8">
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                        <TextBlock Text="─" 
-                                   FontSize="14" 
-                                   Foreground="#6b7280"
-                                   Cursor="Hand"
-                                   Margin="0,0,16,0"
-                                   MouseLeftButtonDown="MinimizeButton_Click"
-                                   ToolTip="Minimize"/>
-                        <TextBlock Text="✕" 
-                                   FontSize="14" 
-                                   Foreground="#6b7280"
-                                   Cursor="Hand"
-                                   MouseLeftButtonDown="CloseButton_Click"
-                                   ToolTip="Close"/>
+                        <Border Background="Transparent" Padding="5" Cursor="Hand" MouseLeftButtonDown="MinimizeButton_Click" ToolTip="Minimize">
+                            <TextBlock Text="─" FontSize="14" FontWeight="Bold" Foreground="#CBD5E1"/>
+                        </Border>
+                        <Border Background="Transparent" Padding="5" Cursor="Hand" MouseLeftButtonDown="CloseButton_Click" ToolTip="Close">
+                            <TextBlock Text="✕" FontSize="14" FontWeight="Bold" Foreground="#CBD5E1"/>
+                        </Border>
                     </StackPanel>
                 </Grid>
                 
                 <!-- HEADER -->
-                <StackPanel Grid.Row="1" Margin="0,0,0,16" HorizontalAlignment="Left">
-                    <StackPanel Orientation="Horizontal">
+                <Grid Grid.Row="1" Margin="0,0,0,20">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center"
+                                ToolTip="Real-time network speed monitoring">
                         <TextBlock Text="⚡" FontSize="26" VerticalAlignment="Center" Margin="0,0,4,0"/>
                         <TextBlock Text="Throughput" 
                                    FontSize="26" 
@@ -91,74 +135,100 @@
                                    Foreground="#60A5FA"
                                    VerticalAlignment="Center"/>
                     </StackPanel>
-                    <TextBlock Text="Network Speed Monitor" 
-                               FontSize="10" 
-                               Foreground="#6b7280"
-                               Margin="0,2,0,0"/>
-                </StackPanel>
+                    
+                    <TextBlock Grid.Column="1" 
+                               Text="Network Speed Monitor" 
+                               FontSize="11"
+                               FontWeight="SemiBold"
+                               Foreground="#CBD5E1" 
+                               HorizontalAlignment="Right"
+                               VerticalAlignment="Bottom"
+                               Margin="0,0,0,5"
+                               ToolTip="Monitors your active network adapter"/>
+                </Grid>
                 
                 <!-- LIVE NETWORK SPEED CARD -->
-                <Border Grid.Row="2" Background="#1a1a2e" CornerRadius="12" Padding="16" Margin="0,0,0,12">
+                <Border Grid.Row="2" Style="{StaticResource CardStyle}">
                     <StackPanel>
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
-                            <TextBlock Text="📊" FontSize="12" VerticalAlignment="Center"/>
-                            <TextBlock Text=" Live Network Speed" 
-                                       FontSize="11" 
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
+                            <TextBlock Text="📊" FontSize="12" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                            <TextBlock Text="Live Network Speed" 
+                                       FontSize="12" 
                                        FontWeight="SemiBold"
                                        Foreground="White"
                                        VerticalAlignment="Center"/>
-                            <TextBlock Text="  •  Updates every second" 
-                                       FontSize="9" 
-                                       Foreground="#6b7280"
-                                       VerticalAlignment="Center"/>
+                            <TextBlock Text=" • Updates every second" 
+                                       FontSize="11" 
+                                       FontWeight="SemiBold"
+                                       Foreground="#ffffffff" 
+                                       VerticalAlignment="Center"
+                                       Margin="6,0,0,0"/>
                         </StackPanel>
                         
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="16"/>
+                                <ColumnDefinition Width="20"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             
                             <!-- Download -->
-                            <Border Grid.Column="0" Background="#252542" CornerRadius="10" Padding="12,10">
+                            <Border Grid.Column="0" Background="#252542" CornerRadius="12" Padding="0,16"
+                                    ToolTip="Current download speed">
                                 <StackPanel HorizontalAlignment="Center">
-                                    <Border Background="#134e3a" CornerRadius="50" Width="40" Height="40" HorizontalAlignment="Center">
-                                        <TextBlock Text="↓" FontSize="20" Foreground="#4ADE80" 
+                                    <Border CornerRadius="50" Width="44" Height="44" HorizontalAlignment="Center" Margin="0,0,0,8">
+                                        <Border.Background>
+                                            <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                                <GradientStop Color="#064E3B" Offset="0"/>
+                                                <GradientStop Color="#065F46" Offset="1"/>
+                                            </LinearGradientBrush>
+                                        </Border.Background>
+                                        <TextBlock Text="↓" FontSize="20" Foreground="#34D399" 
                                                    HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                     </Border>
                                     <TextBlock x:Name="LiveDownloadSpeed" 
                                                Text="0 KB/s" 
-                                               FontSize="14" 
+                                               FontSize="16" 
                                                FontWeight="Bold"
-                                               Foreground="#4ADE80"
+                                               Foreground="#34D399"
                                                HorizontalAlignment="Center"
-                                               Margin="0,6,0,0"/>
+                                               Margin="0,4,0,0"/>
                                     <TextBlock Text="Download" 
-                                               FontSize="9" 
-                                               Foreground="#9ca3af"
-                                               HorizontalAlignment="Center"/>
+                                               FontSize="11"
+                                               FontWeight="SemiBold"
+                                               Foreground="#ffffffff" 
+                                               HorizontalAlignment="Center"
+                                               Margin="0,2,0,0"/>
                                 </StackPanel>
                             </Border>
                             
                             <!-- Upload -->
-                            <Border Grid.Column="2" Background="#252542" CornerRadius="10" Padding="12,10">
+                            <Border Grid.Column="2" Background="#252542" CornerRadius="12" Padding="0,16"
+                                    ToolTip="Current upload speed">
                                 <StackPanel HorizontalAlignment="Center">
-                                    <Border Background="#4a1942" CornerRadius="50" Width="40" Height="40" HorizontalAlignment="Center">
+                                    <Border CornerRadius="50" Width="44" Height="44" HorizontalAlignment="Center" Margin="0,0,0,8">
+                                        <Border.Background>
+                                            <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                                <GradientStop Color="#831843" Offset="0"/>
+                                                <GradientStop Color="#9D174D" Offset="1"/>
+                                            </LinearGradientBrush>
+                                        </Border.Background>
                                         <TextBlock Text="↑" FontSize="20" Foreground="#F472B6" 
                                                    HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                     </Border>
                                     <TextBlock x:Name="LiveUploadSpeed" 
                                                Text="0 KB/s" 
-                                               FontSize="14" 
+                                               FontSize="16" 
                                                FontWeight="Bold"
                                                Foreground="#F472B6"
                                                HorizontalAlignment="Center"
-                                               Margin="0,6,0,0"/>
+                                               Margin="0,4,0,0"/>
                                     <TextBlock Text="Upload" 
-                                               FontSize="9" 
-                                               Foreground="#9ca3af"
-                                               HorizontalAlignment="Center"/>
+                                               FontSize="11"
+                                               FontWeight="SemiBold"
+                                               Foreground="#ffffffff" 
+                                               HorizontalAlignment="Center"
+                                               Margin="0,2,0,0"/>
                                 </StackPanel>
                             </Border>
                         </Grid>
@@ -166,306 +236,119 @@
                 </Border>
                 
                 <!-- SPEED TEST CARD -->
-                <Border Grid.Row="3" Background="#1a1a2e" CornerRadius="12" Padding="16" Margin="0,0,0,12">
+                <Border Grid.Row="3" Style="{StaticResource CardStyle}">
                     <StackPanel>
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
-                            <TextBlock Text="🚀" FontSize="12" VerticalAlignment="Center"/>
-                            <TextBlock Text=" Internet Speed Test" 
-                                       FontSize="11" 
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
+                            <TextBlock Text="🚀" FontSize="12" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                            <TextBlock Text="Internet Speed Test" 
+                                       FontSize="12" 
                                        FontWeight="SemiBold"
                                        Foreground="White"
                                        VerticalAlignment="Center"/>
                         </StackPanel>
                         
                         <Button x:Name="SpeedTestButton" 
-                                Content="⚡ Test My Internet Speed"
+                                Content="Test My Internet Speed"
                                 Style="{StaticResource PrimaryButton}"
-                                HorizontalAlignment="Stretch"
-                                Click="SpeedTestButton_Click"/>
+                                HorizontalAlignment="Center"
+                                Width="180"
+                                Click="SpeedTestButton_Click"
+                                ToolTip="Measure your internet connection speed and latency"/>
                         
                         <ProgressBar x:Name="TestProgressBar"
                                      Height="4"
-                                     Margin="0,10,0,0"
+                                     Margin="0,16,0,0"
                                      Background="#252542"
                                      Foreground="#3b82f6"
                                      Visibility="Collapsed"/>
                         
                         <TextBlock x:Name="TestStatusText"
                                    Text="Measure your maximum internet bandwidth"
-                                   FontSize="9"
-                                   Foreground="#9ca3af"
+                                   FontSize="11"
+                                   FontWeight="SemiBold"
+                                   Foreground="#ffffffff"
                                    HorizontalAlignment="Center"
-                                   Margin="0,8,0,0"/>
+                                   Margin="0,12,0,0"/>
                         
                         <!-- Results Grid -->
-                        <Grid x:Name="ResultsGrid" 
-                              Margin="0,12,0,0"
-                              Visibility="Collapsed">
+                        <Grid x:Name="ResultsGrid" Margin="0,20,0,0" Visibility="Collapsed">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             
-                            <!-- Download Result -->
-                            <StackPanel Grid.Column="0" HorizontalAlignment="Center">
-                                <Border Background="#134e3a" CornerRadius="6" Padding="8,6" HorizontalAlignment="Center">
-                                    <TextBlock Text="↓" FontSize="14" Foreground="#4ADE80" HorizontalAlignment="Center"/>
-                                </Border>
-                                <TextBlock x:Name="ResultDownload" 
-                                           Text="--" 
-                                           FontSize="18" 
-                                           FontWeight="Bold"
-                                           Foreground="White"
-                                           HorizontalAlignment="Center"
-                                           Margin="0,4,0,0"/>
-                                <TextBlock Text="Mbps" FontSize="9" Foreground="#9ca3af" HorizontalAlignment="Center"/>
-                                <TextBlock x:Name="ResultDownloadMB" 
-                                           Text="" 
-                                           FontSize="8" 
-                                           Foreground="#6b7280" 
-                                           HorizontalAlignment="Center"/>
+                            <!-- Latency -->
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="Ping" FontSize="11" FontWeight="SemiBold" Foreground="#ffffffff" HorizontalAlignment="Center"/>
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,4,0,0">
+                                    <TextBlock x:Name="ResultLatency" Text="0" FontSize="16" FontWeight="Bold" Foreground="White" VerticalAlignment="Bottom"/>
+                                    <TextBlock Text=" ms" FontSize="10" FontWeight="SemiBold" Foreground="#94A3B8" VerticalAlignment="Bottom" Margin="2,0,0,2"/>
+                                </StackPanel>
                             </StackPanel>
                             
-                            <!-- Upload Result -->
-                            <StackPanel Grid.Column="1" HorizontalAlignment="Center">
-                                <Border Background="#4a1942" CornerRadius="6" Padding="8,6" HorizontalAlignment="Center">
-                                    <TextBlock Text="↑" FontSize="14" Foreground="#F472B6" HorizontalAlignment="Center"/>
-                                </Border>
-                                <TextBlock x:Name="ResultUpload" 
-                                           Text="--" 
-                                           FontSize="18" 
-                                           FontWeight="Bold"
-                                           Foreground="White"
-                                           HorizontalAlignment="Center"
-                                           Margin="0,4,0,0"/>
-                                <TextBlock Text="Mbps" FontSize="9" Foreground="#9ca3af" HorizontalAlignment="Center"/>
-                                <TextBlock x:Name="ResultUploadMB" 
-                                           Text="" 
-                                           FontSize="8" 
-                                           Foreground="#6b7280" 
-                                           HorizontalAlignment="Center"/>
+                            <Rectangle Grid.Column="1" Width="1" Fill="#252542" Margin="0,4"/>
+
+                            <!-- Download -->
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Text="Download" FontSize="11" FontWeight="SemiBold" Foreground="#ffffffff" HorizontalAlignment="Center"/>
+                                <TextBlock x:Name="ResultDownload" Text="0" FontSize="16" FontWeight="Bold" Foreground="#4ADE80" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                                <TextBlock x:Name="ResultDownloadMB" Text="≈ 0.0 MB/s" FontSize="10" FontWeight="SemiBold" Foreground="#94A3B8" HorizontalAlignment="Center" Margin="0,2,0,0"/>
                             </StackPanel>
+
+                            <Rectangle Grid.Column="3" Width="1" Fill="#252542" Margin="0,4"/>
                             
-                            <!-- Latency Result -->
-                            <StackPanel Grid.Column="2" HorizontalAlignment="Center">
-                                <Border Background="#4a4a19" CornerRadius="6" Padding="8,6" HorizontalAlignment="Center">
-                                    <TextBlock Text="⏱" FontSize="14" Foreground="#FBBF24" HorizontalAlignment="Center"/>
-                                </Border>
-                                <TextBlock x:Name="ResultLatency" 
-                                           Text="--" 
-                                           FontSize="18" 
-                                           FontWeight="Bold"
-                                           Foreground="White"
-                                           HorizontalAlignment="Center"
-                                           Margin="0,4,0,0"/>
-                                <TextBlock Text="ms" FontSize="9" Foreground="#9ca3af" HorizontalAlignment="Center"/>
-                                <TextBlock Text="Ping" 
-                                           FontSize="8" 
-                                           Foreground="#6b7280" 
-                                           HorizontalAlignment="Center"/>
+                            <!-- Upload -->
+                            <StackPanel Grid.Column="4">
+                                <TextBlock Text="Upload" FontSize="11" FontWeight="SemiBold" Foreground="#ffffffff" HorizontalAlignment="Center"/>
+                                <TextBlock x:Name="ResultUpload" Text="0" FontSize="16" FontWeight="Bold" Foreground="#F472B6" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                                <TextBlock x:Name="ResultUploadMB" Text="≈ 0.0 MB/s" FontSize="10" FontWeight="SemiBold" Foreground="#94A3B8" HorizontalAlignment="Center" Margin="0,2,0,0"/>
                             </StackPanel>
                         </Grid>
                     </StackPanel>
                 </Border>
-                
-                <!-- WIDGET STYLE SELECTOR -->
-                <Border Grid.Row="4" Background="#1a1a2e" CornerRadius="12" Padding="16" Margin="0,0,0,12">
+
+                <!-- WIDGET SELECTOR -->
+                <Border Grid.Row="4" Style="{StaticResource CardStyle}">
                     <StackPanel>
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
-                            <TextBlock Text="🎨" FontSize="12" VerticalAlignment="Center"/>
-                            <TextBlock Text=" Widget Style" 
-                                       FontSize="11" 
-                                       FontWeight="SemiBold"
-                                       Foreground="White"
-                                       VerticalAlignment="Center"/>
-                            <TextBlock Text="  •  Click to switch &amp; save" 
-                                       FontSize="9" 
-                                       Foreground="#6b7280"
-                                       VerticalAlignment="Center"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                            <TextBlock Text="🎨" FontSize="12" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                            <TextBlock Text="Widget Style" FontSize="12" FontWeight="SemiBold" Foreground="White"/>
                         </StackPanel>
                         
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="Auto"/>
-                            </Grid.RowDefinitions>
-                            
-                            <!-- Full Widget -->
-                            <RadioButton x:Name="FullWidgetRadio" 
-                                         Grid.Row="0" Grid.Column="0"
-                                         GroupName="WidgetStyle"
-                                         Tag="Full"
-                                         Checked="WidgetRadio_Checked"
-                                         Margin="0,0,6,6"
-                                         Cursor="Hand">
-                                <RadioButton.Template>
-                                    <ControlTemplate TargetType="RadioButton">
-                                        <Border x:Name="border" Background="#252542" CornerRadius="8" Padding="10,8">
-                                            <StackPanel Orientation="Horizontal">
-                                                <TextBlock Text="⚡" FontSize="14" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                                <StackPanel>
-                                                    <TextBlock Text="Full" FontSize="10" FontWeight="SemiBold" Foreground="White"/>
-                                                    <TextBlock Text="Header + Speeds" FontSize="8" Foreground="#6b7280"/>
-                                                </StackPanel>
-                                            </StackPanel>
-                                        </Border>
-                                        <ControlTemplate.Triggers>
-                                            <Trigger Property="IsChecked" Value="True">
-                                                <Setter TargetName="border" Property="Background" Value="#3b82f6"/>
-                                            </Trigger>
-                                            <Trigger Property="IsMouseOver" Value="True">
-                                                <Setter TargetName="border" Property="BorderBrush" Value="#60A5FA"/>
-                                                <Setter TargetName="border" Property="BorderThickness" Value="1"/>
-                                            </Trigger>
-                                        </ControlTemplate.Triggers>
-                                    </ControlTemplate>
-                                </RadioButton.Template>
-                            </RadioButton>
-                            
-                            <!-- Compact Widget -->
-                            <RadioButton x:Name="CompactWidgetRadio" 
-                                         Grid.Row="0" Grid.Column="1"
-                                         GroupName="WidgetStyle"
-                                         Tag="Compact"
-                                         Checked="WidgetRadio_Checked"
-                                         Margin="6,0,0,6"
-                                         Cursor="Hand">
-                                <RadioButton.Template>
-                                    <ControlTemplate TargetType="RadioButton">
-                                        <Border x:Name="border" Background="#252542" CornerRadius="8" Padding="10,8">
-                                            <StackPanel Orientation="Horizontal">
-                                                <TextBlock Text="↕" FontSize="14" Foreground="#4ADE80" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                                <StackPanel>
-                                                    <TextBlock Text="Compact" FontSize="10" FontWeight="SemiBold" Foreground="White"/>
-                                                    <TextBlock Text="↓ ↑ Only" FontSize="8" Foreground="#6b7280"/>
-                                                </StackPanel>
-                                            </StackPanel>
-                                        </Border>
-                                        <ControlTemplate.Triggers>
-                                            <Trigger Property="IsChecked" Value="True">
-                                                <Setter TargetName="border" Property="Background" Value="#3b82f6"/>
-                                            </Trigger>
-                                            <Trigger Property="IsMouseOver" Value="True">
-                                                <Setter TargetName="border" Property="BorderBrush" Value="#60A5FA"/>
-                                                <Setter TargetName="border" Property="BorderThickness" Value="1"/>
-                                            </Trigger>
-                                        </ControlTemplate.Triggers>
-                                    </ControlTemplate>
-                                </RadioButton.Template>
-                            </RadioButton>
-                            
-                            <!-- Minimal Widget -->
-                            <RadioButton x:Name="MinimalWidgetRadio" 
-                                         Grid.Row="1" Grid.Column="0"
-                                         GroupName="WidgetStyle"
-                                         Tag="Minimal"
-                                         Checked="WidgetRadio_Checked"
-                                         Margin="0,6,6,0"
-                                         Cursor="Hand">
-                                <RadioButton.Template>
-                                    <ControlTemplate TargetType="RadioButton">
-                                        <Border x:Name="border" Background="#252542" CornerRadius="8" Padding="10,8">
-                                            <StackPanel Orientation="Horizontal">
-                                                <TextBlock Text="↓" FontSize="14" Foreground="#4ADE80" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                                <StackPanel>
-                                                    <TextBlock Text="Minimal" FontSize="10" FontWeight="SemiBold" Foreground="White"/>
-                                                    <TextBlock Text="Tiny Download" FontSize="8" Foreground="#6b7280"/>
-                                                </StackPanel>
-                                            </StackPanel>
-                                        </Border>
-                                        <ControlTemplate.Triggers>
-                                            <Trigger Property="IsChecked" Value="True">
-                                                <Setter TargetName="border" Property="Background" Value="#3b82f6"/>
-                                            </Trigger>
-                                            <Trigger Property="IsMouseOver" Value="True">
-                                                <Setter TargetName="border" Property="BorderBrush" Value="#60A5FA"/>
-                                                <Setter TargetName="border" Property="BorderThickness" Value="1"/>
-                                            </Trigger>
-                                        </ControlTemplate.Triggers>
-                                    </ControlTemplate>
-                                </RadioButton.Template>
-                            </RadioButton>
-                            
-                            <!-- Speed Test Widget -->
-                            <RadioButton x:Name="SpeedTestWidgetRadio" 
-                                         Grid.Row="1" Grid.Column="1"
-                                         GroupName="WidgetStyle"
-                                         Tag="SpeedTest"
-                                         Checked="WidgetRadio_Checked"
-                                         Margin="6,6,0,0"
-                                         Cursor="Hand">
-                                <RadioButton.Template>
-                                    <ControlTemplate TargetType="RadioButton">
-                                        <Border x:Name="border" Background="#252542" CornerRadius="8" Padding="10,8">
-                                            <StackPanel Orientation="Horizontal">
-                                                <TextBlock Text="🚀" FontSize="14" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                                <StackPanel>
-                                                    <TextBlock Text="Speed Test" FontSize="10" FontWeight="SemiBold" Foreground="White"/>
-                                                    <TextBlock Text="Test Focused" FontSize="8" Foreground="#6b7280"/>
-                                                </StackPanel>
-                                            </StackPanel>
-                                        </Border>
-                                        <ControlTemplate.Triggers>
-                                            <Trigger Property="IsChecked" Value="True">
-                                                <Setter TargetName="border" Property="Background" Value="#3b82f6"/>
-                                            </Trigger>
-                                            <Trigger Property="IsMouseOver" Value="True">
-                                                <Setter TargetName="border" Property="BorderBrush" Value="#60A5FA"/>
-                                                <Setter TargetName="border" Property="BorderThickness" Value="1"/>
-                                            </Trigger>
-                                        </ControlTemplate.Triggers>
-                                    </ControlTemplate>
-                                </RadioButton.Template>
-                            </RadioButton>
-                        </Grid>
-                    </StackPanel>
-                </Border>
-                
-                <!-- INFO CARD -->
-                <Border Grid.Row="5" Background="#0f2744" CornerRadius="10" Padding="12" Margin="0,0,0,10">
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="ℹ️" FontSize="12" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                        <TextBlock Text="Mbps = Internet speed (ISPs) • MB/s = Download speed (browsers) • 100 Mbps ≈ 12.5 MB/s" 
-                                   FontSize="9" 
-                                   Foreground="#9ca3af"
-                                   VerticalAlignment="Center"
-                                   TextWrapping="Wrap"/>
+                        <WrapPanel HorizontalAlignment="Center">
+                            <RadioButton x:Name="FullWidgetRadio" Content="Full" Tag="Full" Style="{StaticResource WidgetRadio}" GroupName="Widgets" Checked="WidgetRadio_Checked"
+                                         ToolTip="Show the full dashboard overlay"/>
+                            <RadioButton x:Name="CompactWidgetRadio" Content="Compact" Tag="Compact" Style="{StaticResource WidgetRadio}" GroupName="Widgets" Checked="WidgetRadio_Checked"
+                                         ToolTip="Show small pill widget"/>
+                            <RadioButton x:Name="MinimalWidgetRadio" Content="Minimal" Tag="Minimal" Style="{StaticResource WidgetRadio}" GroupName="Widgets" Checked="WidgetRadio_Checked"
+                                         ToolTip="Show text-only widget"/>
+                            <RadioButton x:Name="SpeedTestWidgetRadio" Content="Speed Test" Tag="SpeedTest" Style="{StaticResource WidgetRadio}" GroupName="Widgets" Checked="WidgetRadio_Checked"
+                                         ToolTip="Show dedicated speed test widget"/>
+                        </WrapPanel>
                     </StackPanel>
                 </Border>
                 
                 <!-- FOOTER -->
-                <StackPanel Grid.Row="6" Orientation="Horizontal" HorizontalAlignment="Center">
-                    <Border Background="#1a1a2e" CornerRadius="6" Padding="10,6" Margin="0,0,8,0">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="✨" FontSize="9"/>
-                            <TextBlock Text=" Crafted by "
-                                       FontSize="9"
-                                       Foreground="#6b7280"
-                                       VerticalAlignment="Center"/>
-                            <TextBlock Text="Hakkan"
-                                       FontSize="9"
-                                       Foreground="#60A5FA"
-                                       Cursor="Hand"
-                                       VerticalAlignment="Center"
-                                       MouseLeftButtonDown="OpenHakkanLink_Click"
-                                       ToolTip="hakkan.is-a.dev"/>
-                        </StackPanel>
-                    </Border>
-                    
-                    <Border Background="#1a1a2e" CornerRadius="6" Padding="10,6">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="🔒" FontSize="9"/>
-                            <TextBlock Text=" No data collected"
-                                       FontSize="9"
-                                       Foreground="#6b7280"
-                                       VerticalAlignment="Center"/>
-                        </StackPanel>
-                    </Border>
+                <StackPanel Grid.Row="5" HorizontalAlignment="Center" Margin="0,8,0,0">
+                    <TextBlock FontSize="10" 
+                               Foreground="#ffffffff"
+                               Cursor="Hand"
+                               HorizontalAlignment="Center"
+                               MouseLeftButtonDown="OpenHakkanLink_Click"
+                               ToolTip="Visit Developer's Portfolio">
+                        <Run Text="Crafted by "/>
+                        <Run Text="Hakkan" TextDecorations="Underline" FontWeight="SemiBold" Foreground="#fcfcfcff"/>
+                    </TextBlock>
+                               
+                    <TextBlock Text="v2.1.0" 
+                               FontSize="10" 
+                               FontWeight="SemiBold"
+                               Foreground="#ffffffff"
+                               HorizontalAlignment="Center"
+                               Margin="0,2,0,0"/>
                 </StackPanel>
             </Grid>
         </Viewbox>

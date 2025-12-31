@@ -13,6 +13,8 @@ namespace Throughput.Windows;
 public partial class MinimalWidget : Window
 {
     private readonly DispatcherTimer _updateTimer;
+    private System.Windows.Point _dragStartPosition;
+    private bool _isDragging;
 
     public MinimalWidget()
     {
@@ -31,10 +33,26 @@ public partial class MinimalWidget : Window
         // Start monitoring
         Loaded += (s, e) => _updateTimer.Start();
         Closing += (s, e) => _updateTimer.Stop();
+        
+        // Re-apply topmost when deactivated (fixes taskbar click issue)
+        Deactivated += (s, e) =>
+        {
+            Topmost = false;
+            Topmost = true;
+        };
+        
+        // Prevent minimizing - always restore if minimized
+        StateChanged += (s, e) =>
+        {
+            if (WindowState == WindowState.Minimized)
+            {
+                WindowState = WindowState.Normal;
+            }
+        };
     }
 
     /// <summary>
-    /// Updates the speed display
+    /// Updates the speed display and ensures window stays visible
     /// </summary>
     private void UpdateTimer_Tick(object? sender, EventArgs e)
     {
@@ -45,6 +63,9 @@ public partial class MinimalWidget : Window
 
         // Show only the speed value without the label (e.g., "12 MB/s")
         DownloadSpeedText.Text = SpeedFormatter.FormatBytesPerSecond(download);
+        
+        // Force window to stay visible and topmost using Windows API
+        WindowHelper.ForceVisibleAndTopmost(this);
     }
 
     /// <summary>
@@ -64,7 +85,7 @@ public partial class MinimalWidget : Window
     {
         CloseButton.Visibility = Visibility.Visible;
         MainBorder.BorderBrush = new SolidColorBrush(System.Windows.Media.Color.FromArgb(0x40, 0xFF, 0xFF, 0xFF));
-        MainBorder.Background = new SolidColorBrush(System.Windows.Media.Color.FromArgb(0x60, 0x00, 0x00, 0x00));
+        MainBorder.Background = new SolidColorBrush(System.Windows.Media.Color.FromArgb(0xA0, 0x00, 0x00, 0x00));
     }
 
     /// <summary>
@@ -74,32 +95,42 @@ public partial class MinimalWidget : Window
     {
         CloseButton.Visibility = Visibility.Hidden;
         MainBorder.BorderBrush = System.Windows.Media.Brushes.Transparent;
-        MainBorder.Background = new SolidColorBrush(System.Windows.Media.Color.FromArgb(0x20, 0x00, 0x00, 0x00));
+        MainBorder.Background = new SolidColorBrush(System.Windows.Media.Color.FromArgb(0x80, 0x00, 0x00, 0x00));
     }
 
     /// <summary>
-    /// Allows dragging the window
+    /// Tracks start position and initiates drag
     /// </summary>
     private void Window_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
+        _dragStartPosition = new System.Windows.Point(Left, Top);
+        _isDragging = false;
+        
         if (e.ClickCount == 1)
         {
             DragMove();
+            
+            // Check if we actually moved
+            if (Math.Abs(Left - _dragStartPosition.X) > 5 || Math.Abs(Top - _dragStartPosition.Y) > 5)
+            {
+                _isDragging = true;
+            }
         }
     }
 
     /// <summary>
-    /// Opens dashboard when clicking anywhere (handled via PreviewMouseLeftButtonUp)
+    /// Opens dashboard only if it was a click (not a drag)
     /// </summary>
-    protected override void OnPreviewMouseLeftButtonUp(MouseButtonEventArgs e)
+    protected override void OnMouseLeftButtonUp(MouseButtonEventArgs e)
     {
-        base.OnPreviewMouseLeftButtonUp(e);
+        base.OnMouseLeftButtonUp(e);
         
-        // If we didn't drag much, treat it as a click to open dashboard
-        if (!IsMouseCaptured)
+        // Only open dashboard if we didn't drag
+        if (!_isDragging)
         {
             App.ShowMainWindow();
         }
+        _isDragging = false;
     }
 
     /// <summary>
@@ -111,3 +142,4 @@ public partial class MinimalWidget : Window
         App.ExitApplication();
     }
 }
+

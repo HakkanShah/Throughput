@@ -262,7 +262,8 @@ public partial class MainAppWindow : Window
         {
             if (Enum.TryParse<WidgetType>(tagStr, out var widgetType))
             {
-                App.SwitchWidget(widgetType, saveAsDefault: true);
+                // Pass 'this' so the widget appears below the dashboard
+                App.SwitchWidget(widgetType, saveAsDefault: true, positionBelowWindow: this);
             }
         }
     }

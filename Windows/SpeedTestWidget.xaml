@@ -5,6 +5,7 @@
         SizeToContent="WidthAndHeight"
         WindowStyle="None"
         AllowsTransparency="True"
+        Foreground="White"
         Background="Transparent"
         Topmost="True"
         ShowInTaskbar="False"
@@ -51,7 +52,7 @@
     <!-- Main Container -->
     <Border x:Name="MainBorder"
             CornerRadius="12" 
-            Background="#C0080810"
+            Background="#80000000"
             BorderBrush="#30FFFFFF"
             BorderThickness="1"
             Padding="14,10,14,12">

@@ -5,6 +5,7 @@
         SizeToContent="WidthAndHeight"
         WindowStyle="None"
         AllowsTransparency="True"
+        Foreground="White"
         Background="Transparent"
         Topmost="True"
         ShowInTaskbar="False"
@@ -17,7 +18,7 @@
     <!-- Minimal Container - Purely transparent, tiny size -->
     <Border x:Name="MainBorder"
             CornerRadius="4" 
-            Background="#20000000"
+            Background="#80000000"
             BorderBrush="Transparent"
             BorderThickness="1"
             Padding="4,2">
@@ -36,15 +37,16 @@
                        MouseLeftButtonDown="CloseButton_Click"
                        ToolTip="Close application"/>
             
-            <!-- Download Speed Only - Green, compact -->
-            <TextBlock x:Name="DownloadSpeedText"
-                       Text="0 KB/s" 
-                       FontSize="10" 
-                       FontWeight="SemiBold"
-                       Foreground="#4ADE80"
-                       VerticalAlignment="Center"
-                       HorizontalAlignment="Center"
-                       Margin="0,0,8,0"/>
+            <!-- Download Speed with WiFi icon - Green, compact -->
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="0,0,8,0">
+                <TextBlock Text="📶" FontSize="9" VerticalAlignment="Center" Margin="0,0,3,0"/>
+                <TextBlock x:Name="DownloadSpeedText"
+                           Text="0 KB/s" 
+                           FontSize="10" 
+                           FontWeight="SemiBold"
+                           Foreground="#4ADE80"
+                           VerticalAlignment="Center"/>
+            </StackPanel>
         </Grid>
     </Border>
 </Window>

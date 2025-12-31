@@ -30,10 +30,26 @@ public partial class OverlayWindow : Window
         // Start monitoring
         Loaded += (s, e) => _updateTimer.Start();
         Closing += OverlayWindow_Closing;
+        
+        // Re-apply topmost when deactivated (fixes taskbar click issue)
+        Deactivated += (s, e) =>
+        {
+            Topmost = false;
+            Topmost = true;
+        };
+        
+        // Prevent minimizing - always restore if minimized
+        StateChanged += (s, e) =>
+        {
+            if (WindowState == WindowState.Minimized)
+            {
+                WindowState = WindowState.Normal;
+            }
+        };
     }
 
     /// <summary>
-    /// Updates the speed display
+    /// Updates the speed display and ensures window stays visible
     /// </summary>
     private void UpdateTimer_Tick(object? sender, EventArgs e)
     {
@@ -44,6 +60,9 @@ public partial class OverlayWindow : Window
 
         DownloadSpeedText.Text = SpeedFormatter.FormatBytesPerSecond(download);
         UploadSpeedText.Text = SpeedFormatter.FormatBytesPerSecond(upload);
+        
+        // Force window to stay visible and topmost using Windows API
+        Helpers.WindowHelper.ForceVisibleAndTopmost(this);
     }
 
     /// <summary>

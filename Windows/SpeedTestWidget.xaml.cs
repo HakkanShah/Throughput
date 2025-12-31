@@ -13,6 +13,7 @@ public partial class SpeedTestWidget : Window
 {
     private CancellationTokenSource? _speedTestCts;
     private bool _isTestRunning;
+    private readonly System.Windows.Threading.DispatcherTimer _visibilityTimer;
 
     public SpeedTestWidget()
     {
@@ -30,6 +31,34 @@ public partial class SpeedTestWidget : Window
         PositionWindow();
 
         Closing += SpeedTestWidget_Closing;
+        
+        // Re-apply topmost when deactivated (fixes taskbar click issue)
+        Deactivated += (s, e) =>
+        {
+            Topmost = false;
+            Topmost = true;
+        };
+        
+        // Prevent minimizing - always restore if minimized
+        StateChanged += (s, e) =>
+        {
+            if (WindowState == WindowState.Minimized)
+            {
+                WindowState = WindowState.Normal;
+            }
+        };
+        
+        // Timer to ensure window stays visible using Windows API
+        _visibilityTimer = new System.Windows.Threading.DispatcherTimer
+        {
+            Interval = TimeSpan.FromSeconds(1)
+        };
+        _visibilityTimer.Tick += (s, e) =>
+        {
+            Helpers.WindowHelper.ForceVisibleAndTopmost(this);
+        };
+        
+        Loaded += (s, e) => _visibilityTimer.Start();
     }
 
     /// <summary>

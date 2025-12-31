@@ -13,6 +13,8 @@ namespace Throughput.Windows;
 public partial class CompactWidget : Window
 {
     private readonly DispatcherTimer _updateTimer;
+    private System.Windows.Point _dragStartPosition;
+    private bool _isDragging;
 
     public CompactWidget()
     {
@@ -31,10 +33,26 @@ public partial class CompactWidget : Window
         // Start monitoring
         Loaded += (s, e) => _updateTimer.Start();
         Closing += (s, e) => _updateTimer.Stop();
+        
+        // Re-apply topmost when deactivated (fixes taskbar click issue)
+        Deactivated += (s, e) =>
+        {
+            Topmost = false;
+            Topmost = true;
+        };
+        
+        // Prevent minimizing - always restore if minimized
+        StateChanged += (s, e) =>
+        {
+            if (WindowState == WindowState.Minimized)
+            {
+                WindowState = WindowState.Normal;
+            }
+        };
     }
 
     /// <summary>
-    /// Updates the speed display
+    /// Updates the speed display and ensures window stays visible
     /// </summary>
     private void UpdateTimer_Tick(object? sender, EventArgs e)
     {
@@ -45,6 +63,9 @@ public partial class CompactWidget : Window
 
         DownloadSpeedText.Text = SpeedFormatter.FormatBytesPerSecond(download);
         UploadSpeedText.Text = SpeedFormatter.FormatBytesPerSecond(upload);
+        
+        // Force window to stay visible and topmost using Windows API
+        WindowHelper.ForceVisibleAndTopmost(this);
     }
 
     /// <summary>
@@ -76,28 +97,38 @@ public partial class CompactWidget : Window
     }
 
     /// <summary>
-    /// Allows dragging the window, or opens dashboard on click
+    /// Tracks start position and initiates drag
     /// </summary>
     private void Window_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
+        _dragStartPosition = new System.Windows.Point(Left, Top);
+        _isDragging = false;
+        
         if (e.ClickCount == 1)
         {
             DragMove();
+            
+            // Check if we actually moved
+            if (Math.Abs(Left - _dragStartPosition.X) > 5 || Math.Abs(Top - _dragStartPosition.Y) > 5)
+            {
+                _isDragging = true;
+            }
         }
     }
 
     /// <summary>
-    /// Opens dashboard when clicking anywhere (handled via PreviewMouseLeftButtonUp)
+    /// Opens dashboard only if it was a click (not a drag)
     /// </summary>
-    protected override void OnPreviewMouseLeftButtonUp(MouseButtonEventArgs e)
+    protected override void OnMouseLeftButtonUp(MouseButtonEventArgs e)
     {
-        base.OnPreviewMouseLeftButtonUp(e);
+        base.OnMouseLeftButtonUp(e);
         
-        // If we didn't drag much, treat it as a click to open dashboard
-        if (!IsMouseCaptured)
+        // Only open dashboard if we didn't drag
+        if (!_isDragging)
         {
             App.ShowMainWindow();
         }
+        _isDragging = false;
     }
 
     /// <summary>
@@ -109,3 +140,4 @@ public partial class CompactWidget : Window
         App.ExitApplication();
     }
 }
+

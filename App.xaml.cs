@@ -176,7 +176,10 @@ public partial class App : WpfApplication
     /// <summary>
     /// Switches to a different widget type
     /// </summary>
-    public static void SwitchWidget(WidgetType widgetType, bool saveAsDefault = false)
+    /// <param name="widgetType">The widget type to switch to</param>
+    /// <param name="saveAsDefault">Whether to save this as the default widget</param>
+    /// <param name="positionBelowWindow">Optional window to position the new widget below</param>
+    public static void SwitchWidget(WidgetType widgetType, bool saveAsDefault = false, Window? positionBelowWindow = null)
     {
         // Close current widget
         _currentWidget?.Close();
@@ -192,6 +195,14 @@ public partial class App : WpfApplication
         };
 
         CurrentWidgetType = widgetType;
+        
+        // Position below the specified window if provided
+        if (positionBelowWindow != null && positionBelowWindow.IsVisible)
+        {
+            _currentWidget.Left = positionBelowWindow.Left;
+            _currentWidget.Top = positionBelowWindow.Top + positionBelowWindow.ActualHeight + 10;
+        }
+        
         _currentWidget.Show();
 
         // Save preference if requested
