@@ -53,7 +53,7 @@ Name: "startupicon"; Description: "Start with Windows"; GroupDescription: "Start
 
 [Files]
 ; Main Application Files (from publish folder)
-Source: "..\publish\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "..\publish\portable\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
 [Icons]
