@@ -3,7 +3,7 @@
 
 $ErrorActionPreference = "Stop"
 
-Write-Host "Building Throughput v2.0.0 - Portable Edition" -ForegroundColor Cyan
+Write-Host "Building Throughput v2.1.0 - Portable Edition" -ForegroundColor Cyan
 Write-Host "=" * 50
 
 # Clean previous builds
@@ -32,7 +32,8 @@ if ($LASTEXITCODE -eq 0) {
     Write-Host "Size: $sizeMB MB"
     Write-Host ""
     Write-Host "This is a portable executable - no installation required." -ForegroundColor Cyan
-} else {
+}
+else {
     Write-Host "Build failed!" -ForegroundColor Red
     exit 1
 }

@@ -25,7 +25,7 @@ A lightweight Windows utility that displays **real-time network speed** as an al
 ## 📥 Download & Install
 
 ### Option 1: Installer (Recommended)
-1. Download `Throughput-Setup-2.0.0.exe` from [Releases](https://github.com/HakkanShah/Throughput/releases)
+1. Download `Throughput-Setup-2.1.0.exe` from [Releases](https://github.com/HakkanShah/Throughput/releases)
 2. Run the installer
 3. Choose options:
    - ✅ Create desktop shortcut
@@ -159,5 +159,5 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 ---
 
 <p align="center">
-  Crafted with ❤️ by <a href="https://hakkan.is-a.dev">Hakkan</a>
+  Crafted with by <a href="https://hakkan.is-a.dev">Hakkan</a>
 </p>

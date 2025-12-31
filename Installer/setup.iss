@@ -3,7 +3,7 @@
 ; Website: https://hakkan.is-a.dev
 
 #define MyAppName "Throughput"
-#define MyAppVersion "2.0.0"
+#define MyAppVersion "2.1.0"
 #define MyAppPublisher "Hakkan"
 #define MyAppURL "https://hakkan.is-a.dev"
 #define MyAppExeName "Throughput.exe"
