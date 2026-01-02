@@ -3,6 +3,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
 using Throughput.Helpers;
+using Throughput.Models;
 
 namespace Throughput.Windows;
 
@@ -27,7 +28,7 @@ public partial class MinimalWidget : Window
         };
         _updateTimer.Tick += UpdateTimer_Tick;
 
-        // Position window
+        // Position window (restores saved position or uses default)
         PositionWindow();
 
         // Start monitoring
@@ -69,13 +70,46 @@ public partial class MinimalWidget : Window
     }
 
     /// <summary>
-    /// Positions window at bottom-right, above taskbar
+    /// Positions window - restores saved position or uses default
     /// </summary>
     private void PositionWindow()
     {
+        // Try to restore saved position
+        var savedPosition = App.Settings.GetWidgetPosition(WidgetType.Minimal);
+        
+        if (savedPosition != null)
+        {
+            // Validate the position is still visible on screen
+            var estimatedWidth = 80;  // Approximate width for SizeToContent
+            var estimatedHeight = 30; // Approximate height for SizeToContent
+            
+            if (PositionHelper.IsPositionVisible(savedPosition.Left, savedPosition.Top, estimatedWidth, estimatedHeight))
+            {
+                Left = savedPosition.Left;
+                Top = savedPosition.Top;
+                return;
+            }
+            
+            // Position is off-screen, clamp to nearest visible area
+            var (clampedLeft, clampedTop) = PositionHelper.ClampToScreen(
+                savedPosition.Left, savedPosition.Top, estimatedWidth, estimatedHeight);
+            Left = clampedLeft;
+            Top = clampedTop;
+            return;
+        }
+
+        // Use default position (bottom-right corner)
         var workArea = SystemParameters.WorkArea;
-        Left = workArea.Right - Width - 10;
-        Top = workArea.Bottom - Height - 10;
+        Left = workArea.Right - 90;
+        Top = workArea.Bottom - 40;
+    }
+
+    /// <summary>
+    /// Saves the current widget position
+    /// </summary>
+    private void SavePosition()
+    {
+        App.Settings.SaveWidgetPosition(WidgetType.Minimal, Left, Top);
     }
 
     /// <summary>
@@ -84,8 +118,8 @@ public partial class MinimalWidget : Window
     private void Window_MouseEnter(object sender, System.Windows.Input.MouseEventArgs e)
     {
         CloseButton.Visibility = Visibility.Visible;
-        MainBorder.BorderBrush = new SolidColorBrush(System.Windows.Media.Color.FromArgb(0x40, 0xFF, 0xFF, 0xFF));
-        MainBorder.Background = new SolidColorBrush(System.Windows.Media.Color.FromArgb(0xA0, 0x00, 0x00, 0x00));
+        MainBorder.BorderBrush = new SolidColorBrush(System.Windows.Media.Color.FromArgb(0x35, 0xFF, 0xFF, 0xFF));
+        MainBorder.Background = new SolidColorBrush(System.Windows.Media.Color.FromArgb(0xD0, 0x05, 0x05, 0x08));
     }
 
     /// <summary>
@@ -95,7 +129,7 @@ public partial class MinimalWidget : Window
     {
         CloseButton.Visibility = Visibility.Hidden;
         MainBorder.BorderBrush = System.Windows.Media.Brushes.Transparent;
-        MainBorder.Background = new SolidColorBrush(System.Windows.Media.Color.FromArgb(0x80, 0x00, 0x00, 0x00));
+        MainBorder.Background = new SolidColorBrush(System.Windows.Media.Color.FromArgb(0xB0, 0x05, 0x05, 0x08));
     }
 
     /// <summary>
@@ -114,6 +148,8 @@ public partial class MinimalWidget : Window
             if (Math.Abs(Left - _dragStartPosition.X) > 5 || Math.Abs(Top - _dragStartPosition.Y) > 5)
             {
                 _isDragging = true;
+                // Save the new position
+                SavePosition();
             }
         }
     }
@@ -142,4 +178,3 @@ public partial class MinimalWidget : Window
         App.ExitApplication();
     }
 }
-

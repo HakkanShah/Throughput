@@ -1,6 +1,7 @@
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
+using Throughput.Helpers;
 using Throughput.Models;
 
 namespace Throughput.Windows;
@@ -14,6 +15,8 @@ public partial class SpeedTestWidget : Window
     private CancellationTokenSource? _speedTestCts;
     private bool _isTestRunning;
     private readonly System.Windows.Threading.DispatcherTimer _visibilityTimer;
+    private System.Windows.Point _dragStartPosition;
+    private bool _isDragging;
 
     public SpeedTestWidget()
     {
@@ -27,7 +30,7 @@ public partial class SpeedTestWidget : Window
             speedTestService.TestCompleted += OnSpeedTestCompleted;
         }
 
-        // Position window
+        // Position window (restores saved position or uses default)
         PositionWindow();
 
         Closing += SpeedTestWidget_Closing;
@@ -62,13 +65,46 @@ public partial class SpeedTestWidget : Window
     }
 
     /// <summary>
-    /// Positions window at bottom-right, above taskbar
+    /// Positions window - restores saved position or uses default
     /// </summary>
     private void PositionWindow()
     {
+        // Try to restore saved position
+        var savedPosition = App.Settings.GetWidgetPosition(WidgetType.SpeedTest);
+        
+        if (savedPosition != null)
+        {
+            // Validate the position is still visible on screen
+            var estimatedWidth = 200;  // Approximate width for SizeToContent
+            var estimatedHeight = 150; // Approximate height for SizeToContent
+            
+            if (PositionHelper.IsPositionVisible(savedPosition.Left, savedPosition.Top, estimatedWidth, estimatedHeight))
+            {
+                Left = savedPosition.Left;
+                Top = savedPosition.Top;
+                return;
+            }
+            
+            // Position is off-screen, clamp to nearest visible area
+            var (clampedLeft, clampedTop) = PositionHelper.ClampToScreen(
+                savedPosition.Left, savedPosition.Top, estimatedWidth, estimatedHeight);
+            Left = clampedLeft;
+            Top = clampedTop;
+            return;
+        }
+
+        // Use default position (bottom-right corner)
         var workArea = SystemParameters.WorkArea;
-        Left = workArea.Right - Width - 10;
-        Top = workArea.Bottom - Height - 10;
+        Left = workArea.Right - 210;
+        Top = workArea.Bottom - 160;
+    }
+
+    /// <summary>
+    /// Saves the current widget position
+    /// </summary>
+    private void SavePosition()
+    {
+        App.Settings.SaveWidgetPosition(WidgetType.SpeedTest, Left, Top);
     }
 
     /// <summary>
@@ -88,13 +124,24 @@ public partial class SpeedTestWidget : Window
     }
 
     /// <summary>
-    /// Allows dragging the window
+    /// Allows dragging the window and saves position after drag
     /// </summary>
     private void Window_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
         if (e.ButtonState == MouseButtonState.Pressed)
         {
+            _dragStartPosition = new System.Windows.Point(Left, Top);
+            _isDragging = false;
+            
             DragMove();
+            
+            // Check if we actually moved
+            if (Math.Abs(Left - _dragStartPosition.X) > 5 || Math.Abs(Top - _dragStartPosition.Y) > 5)
+            {
+                _isDragging = true;
+                // Save the new position
+                SavePosition();
+            }
         }
     }
 
@@ -203,6 +250,7 @@ public partial class SpeedTestWidget : Window
     private void SpeedTestWidget_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
     {
         _speedTestCts?.Cancel();
+        _visibilityTimer.Stop();
 
         var speedTestService = App.SpeedTestService;
         if (speedTestService != null)

@@ -18,10 +18,13 @@
     <!-- Minimal Container - Purely transparent, tiny size -->
     <Border x:Name="MainBorder"
             CornerRadius="4" 
-            Background="#80000000"
+            Background="#B0050508"
             BorderBrush="Transparent"
             BorderThickness="1"
             Padding="4,2">
+        <Border.Effect>
+            <DropShadowEffect Color="Black" BlurRadius="8" ShadowDepth="1" Opacity="0.4"/>
+        </Border.Effect>
         
         <Grid>
             <!-- Close Button - Only visible on hover, positioned at top-right -->

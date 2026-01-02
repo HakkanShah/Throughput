@@ -14,13 +14,13 @@
     <Window.Resources>
         <!-- Card Style -->
         <Style x:Key="CardStyle" TargetType="Border">
-            <Setter Property="Background" Value="#1a1a2e"/>
+            <Setter Property="Background" Value="#18181B"/>
             <Setter Property="CornerRadius" Value="12"/>
             <Setter Property="Padding" Value="16"/>
             <Setter Property="Margin" Value="0,0,0,12"/>
             <Setter Property="Effect">
                 <Setter.Value>
-                    <DropShadowEffect Color="Black" BlurRadius="10" ShadowDepth="2" Opacity="0.3"/>
+                    <DropShadowEffect Color="Black" BlurRadius="8" ShadowDepth="2" Opacity="0.25"/>
                 </Setter.Value>
             </Setter>
         </Style>
@@ -92,8 +92,12 @@
     </Window.Resources>
     
     <!-- Main container with glass effect -->
-    <Border Background="#90080810" CornerRadius="12"
+    <Border Background="#D0050508" CornerRadius="12"
+            BorderBrush="#20FFFFFF" BorderThickness="1"
             MouseLeftButtonDown="Window_MouseLeftButtonDown">
+        <Border.Effect>
+            <DropShadowEffect Color="Black" BlurRadius="20" ShadowDepth="3" Opacity="0.6"/>
+        </Border.Effect>
         
         <Viewbox Stretch="Uniform" StretchDirection="Both">
             <Grid Width="440" Margin="20,16">

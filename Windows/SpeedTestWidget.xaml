@@ -52,10 +52,13 @@
     <!-- Main Container -->
     <Border x:Name="MainBorder"
             CornerRadius="12" 
-            Background="#80000000"
-            BorderBrush="#30FFFFFF"
+            Background="#B0050508"
+            BorderBrush="#25FFFFFF"
             BorderThickness="1"
             Padding="14,10,14,12">
+        <Border.Effect>
+            <DropShadowEffect Color="Black" BlurRadius="12" ShadowDepth="2" Opacity="0.5"/>
+        </Border.Effect>
         
         <Grid>
             <Grid.RowDefinitions>

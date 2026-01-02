@@ -2,6 +2,7 @@ using System.Windows;
 using System.Windows.Input;
 using System.Windows.Threading;
 using Throughput.Helpers;
+using Throughput.Models;
 
 namespace Throughput.Windows;
 
@@ -12,6 +13,8 @@ namespace Throughput.Windows;
 public partial class OverlayWindow : Window
 {
     private readonly DispatcherTimer _updateTimer;
+    private System.Windows.Point _dragStartPosition;
+    private bool _isDragging;
 
     public OverlayWindow()
     {
@@ -24,7 +27,7 @@ public partial class OverlayWindow : Window
         };
         _updateTimer.Tick += UpdateTimer_Tick;
 
-        // Position window
+        // Position window (restores saved position or uses default)
         PositionWindow();
 
         // Start monitoring
@@ -66,23 +69,67 @@ public partial class OverlayWindow : Window
     }
 
     /// <summary>
-    /// Positions window at bottom-right, above taskbar
+    /// Positions window - restores saved position or uses default
     /// </summary>
     private void PositionWindow()
     {
+        // Try to restore saved position
+        var savedPosition = App.Settings.GetWidgetPosition(WidgetType.Full);
+        
+        if (savedPosition != null)
+        {
+            // Validate the position is still visible on screen
+            var estimatedWidth = 200;  // Approximate width for SizeToContent
+            var estimatedHeight = 100; // Approximate height for SizeToContent
+            
+            if (PositionHelper.IsPositionVisible(savedPosition.Left, savedPosition.Top, estimatedWidth, estimatedHeight))
+            {
+                Left = savedPosition.Left;
+                Top = savedPosition.Top;
+                return;
+            }
+            
+            // Position is off-screen, clamp to nearest visible area
+            var (clampedLeft, clampedTop) = PositionHelper.ClampToScreen(
+                savedPosition.Left, savedPosition.Top, estimatedWidth, estimatedHeight);
+            Left = clampedLeft;
+            Top = clampedTop;
+            return;
+        }
+
+        // Use default position (bottom-right corner)
         var workArea = SystemParameters.WorkArea;
-        Left = workArea.Right - Width - 10;
-        Top = workArea.Bottom - Height - 10;
+        Left = workArea.Right - 210;
+        Top = workArea.Bottom - 110;
     }
 
     /// <summary>
-    /// Allows dragging the window
+    /// Saves the current widget position
+    /// </summary>
+    private void SavePosition()
+    {
+        App.Settings.SaveWidgetPosition(WidgetType.Full, Left, Top);
+    }
+
+    /// <summary>
+    /// Allows dragging the window and saves position after drag
     /// </summary>
     private void Window_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
         if (e.ButtonState == MouseButtonState.Pressed)
         {
+            _dragStartPosition = new System.Windows.Point(Left, Top);
+            _isDragging = false;
+            
             DragMove();
+            
+            // Check if we actually moved
+            if (Math.Abs(Left - _dragStartPosition.X) > 5 || Math.Abs(Top - _dragStartPosition.Y) > 5)
+            {
+                _isDragging = true;
+                // Save the new position
+                SavePosition();
+            }
         }
     }
 
@@ -112,4 +159,3 @@ public partial class OverlayWindow : Window
         _updateTimer.Stop();
     }
 }
-
