@@ -42,7 +42,7 @@ A lightweight Windows utility that displays **real-time network speed** as an al
 
 | Requirement | Value |
 |-------------|-------|
-| **OS** | Windows 10 (1809+) or Windows 11 |
+| **OS** | Windows 10 or Windows 11 |
 | **Architecture** | x64 (64-bit) |
 | **RAM** | ~50 MB |
 | **Storage** | ~100 MB |
