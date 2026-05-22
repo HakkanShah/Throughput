@@ -34,39 +34,36 @@ public partial class MainAppWindow : Window
             speedTestService.TestCompleted += OnSpeedTestCompleted;
         }
 
-        // Initialize widget selector
-        InitializeWidgetSelector();
-
-        Loaded += (s, e) => _updateTimer.Start();
+        Loaded += (s, e) =>
+        {
+            _updateTimer.Start();
+            UpdateWidgetStatus();
+        };
         Closing += MainAppWindow_Closing;
     }
 
     /// <summary>
-    /// Initializes the widget selector UI
+    /// Updates the Launch Widget button + status text to reflect whether the
+    /// widget is currently visible.
     /// </summary>
-    private void InitializeWidgetSelector()
+    private void UpdateWidgetStatus()
     {
-        // Set the current widget as selected
-        UpdateWidgetSelectorUI();
+        bool visible = App.IsWidgetVisible;
+        LaunchWidgetButton.Content = visible ? "Widget is shown" : "Launch Widget";
+        LaunchWidgetButton.IsEnabled = !visible;
+        WidgetStatusText.Text = visible
+            ? "Widget is visible on your desktop"
+            : "Widget is hidden";
     }
 
     /// <summary>
-    /// Updates widget selector to reflect current selection
-    /// </summary>
-    private void UpdateWidgetSelectorUI()
-    {
-        var currentType = App.CurrentWidgetType;
-        FullWidgetRadio.IsChecked = currentType == WidgetType.Full;
-        CompactWidgetRadio.IsChecked = currentType == WidgetType.Compact;
-        MinimalWidgetRadio.IsChecked = currentType == WidgetType.Minimal;
-        SpeedTestWidgetRadio.IsChecked = currentType == WidgetType.SpeedTest;
-    }
-
-    /// <summary>
-    /// Updates live throughput display
+    /// Updates the live throughput readouts and keeps the Launch Widget button
+    /// in sync with the widget's actual visibility.
     /// </summary>
     private void UpdateTimer_Tick(object? sender, EventArgs e)
     {
+        UpdateWidgetStatus();
+
         if (_isTestRunning) return;
 
         var monitor = App.NetworkMonitor;
@@ -254,18 +251,12 @@ public partial class MainAppWindow : Window
     }
 
     /// <summary>
-    /// Handles widget selection change
+    /// Shows (re-launches) the widget on user click.
     /// </summary>
-    private void WidgetRadio_Checked(object sender, RoutedEventArgs e)
+    private void LaunchWidgetButton_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is System.Windows.Controls.RadioButton radio && radio.Tag is string tagStr)
-        {
-            if (Enum.TryParse<WidgetType>(tagStr, out var widgetType))
-            {
-                // Pass 'this' so the widget appears below the dashboard
-                App.SwitchWidget(widgetType, saveAsDefault: true, positionBelowWindow: this);
-            }
-        }
+        App.ShowWidget();
+        UpdateWidgetStatus();
     }
 }
 

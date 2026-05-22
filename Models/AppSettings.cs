@@ -14,6 +14,16 @@ public class WidgetPosition
 }
 
 /// <summary>
+/// Represents a widget's saved size (width and height in DIPs).
+/// </summary>
+public class WidgetSize
+{
+    public double Width { get; set; }
+    public double Height { get; set; }
+    public bool HasBeenSet { get; set; }
+}
+
+/// <summary>
 /// Application settings with JSON persistence
 /// </summary>
 public class AppSettings
@@ -25,41 +35,56 @@ public class AppSettings
     );
 
     /// <summary>
-    /// The widget type to show on startup
+    /// The saved on-screen position of the widget
     /// </summary>
-    public WidgetType DefaultWidgetType { get; set; } = WidgetType.Full;
+    public WidgetPosition WidgetPosition { get; set; } = new();
 
     /// <summary>
-    /// Stored widget positions by type name
+    /// The saved size of the widget (set when the user resizes it)
     /// </summary>
-    public Dictionary<string, WidgetPosition> WidgetPositions { get; set; } = new();
+    public WidgetSize WidgetSize { get; set; } = new();
 
     /// <summary>
-    /// Gets the saved position for a widget type
+    /// Gets the saved widget position, or null if it has never been set
     /// </summary>
-    /// <param name="widgetType">The widget type</param>
-    /// <returns>The saved position, or null if not set</returns>
-    public WidgetPosition? GetWidgetPosition(WidgetType widgetType)
+    public WidgetPosition? GetWidgetPosition()
     {
-        var key = widgetType.ToString();
-        return WidgetPositions.TryGetValue(key, out var position) && position.HasBeenSet 
-            ? position 
-            : null;
+        return WidgetPosition.HasBeenSet ? WidgetPosition : null;
     }
 
     /// <summary>
-    /// Saves the position for a widget type
+    /// Saves the widget's on-screen position
     /// </summary>
-    /// <param name="widgetType">The widget type</param>
     /// <param name="left">Left position</param>
     /// <param name="top">Top position</param>
-    public void SaveWidgetPosition(WidgetType widgetType, double left, double top)
+    public void SaveWidgetPosition(double left, double top)
     {
-        var key = widgetType.ToString();
-        WidgetPositions[key] = new WidgetPosition
+        WidgetPosition = new WidgetPosition
         {
             Left = left,
             Top = top,
+            HasBeenSet = true
+        };
+        Save();
+    }
+
+    /// <summary>
+    /// Gets the saved widget size, or null if the user has never resized it.
+    /// </summary>
+    public WidgetSize? GetWidgetSize()
+    {
+        return WidgetSize.HasBeenSet ? WidgetSize : null;
+    }
+
+    /// <summary>
+    /// Saves the widget's user-chosen size.
+    /// </summary>
+    public void SaveWidgetSize(double width, double height)
+    {
+        WidgetSize = new WidgetSize
+        {
+            Width = width,
+            Height = height,
             HasBeenSet = true
         };
         Save();

@@ -11,7 +11,7 @@
     <!-- Assembly Information -->
     <AssemblyName>Throughput</AssemblyName>
     <RootNamespace>Throughput</RootNamespace>
-    <Version>2.1.0</Version>
+    <Version>3.0.0</Version>
     <Authors>Hakkan</Authors>
     <Company></Company>
     <Product>Throughput</Product>
@@ -27,9 +27,30 @@
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
     <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
-    
+
     <!-- Suppress console window -->
     <DisableWinExeOutputInference>false</DisableWinExeOutputInference>
+  </PropertyGroup>
+
+  <!-- Release-only size optimisations. Kept out of Debug so dev/build is unaffected. -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <!-- Drop the locale-specific ICU/CLDR data we don't need. The widget only
+         formats numbers/percentages with invariant culture, saving a few MB. -->
+    <InvariantGlobalization>true</InvariantGlobalization>
+
+    <!-- NOTE: trimming is OFF.
+         WPF + WinForms rely heavily on runtime reflection that the IL trimmer
+         cannot prove is live, so even <TrimMode>partial</TrimMode> with the
+         suppress-error flags strips types XAML loads at startup, causing the
+         "An error occurred" crash. The size win is not worth the runtime risk.
+         The other size optimisations below still apply and are safe. -->
+
+    <!-- Don't emit debug/PDB data into the published output -->
+    <DebugType>none</DebugType>
+    <DebugSymbols>false</DebugSymbols>
+
+    <!-- Drop framework satellite resources (other-language strings) -->
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
   </PropertyGroup>
 
   <!-- Include Assets -->

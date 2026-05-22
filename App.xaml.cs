@@ -9,48 +9,46 @@ using WpfApplication = System.Windows.Application;
 namespace Throughput;
 
 /// <summary>
-/// Application entry point with multi-widget management
+/// Application entry point - hosts the single Widget, the dashboard, and the
+/// shared monitoring services.
 /// </summary>
 public partial class App : WpfApplication
 {
-    private static Window? _currentWidget;
+    private static Widget? _widget;
     private static MainAppWindow? _mainAppWindow;
     private static NotifyIcon? _trayIcon;
     private static AppSettings _settings = new();
 
-    // Shared services - accessible from all widgets
+    // Shared services - accessible from the widget and the dashboard
     private static NetworkSpeedMonitor? _networkMonitor;
     private static SpeedTestService? _speedTestService;
+    private static SystemMonitor? _systemMonitor;
 
-    /// <summary>
-    /// The current widget window instance
-    /// </summary>
-    public static Window? CurrentWidget => _currentWidget;
+    /// <summary>The current widget instance, if shown.</summary>
+    public static Widget? CurrentWidget => _widget;
 
-    /// <summary>
-    /// The main app window instance (created on demand)
-    /// </summary>
+    /// <summary>The main dashboard window (created on demand).</summary>
     public static MainAppWindow? MainAppWindow => _mainAppWindow;
 
-    /// <summary>
-    /// Shared network speed monitor
-    /// </summary>
+    /// <summary>Shared network speed monitor.</summary>
     public static NetworkSpeedMonitor? NetworkMonitor => _networkMonitor;
 
     /// <summary>
-    /// Shared speed test service
+    /// Shared on-demand speed test service. Lazily created on first access so
+    /// the HttpClient + buffers aren't allocated unless the user actually
+    /// triggers a test from the dashboard.
     /// </summary>
-    public static SpeedTestService? SpeedTestService => _speedTestService;
+    public static SpeedTestService SpeedTestService
+        => _speedTestService ??= new SpeedTestService();
 
-    /// <summary>
-    /// Current application settings
-    /// </summary>
+    /// <summary>Shared CPU and memory monitor.</summary>
+    public static SystemMonitor? SystemMonitor => _systemMonitor;
+
+    /// <summary>Current application settings.</summary>
     public static AppSettings Settings => _settings;
 
-    /// <summary>
-    /// Current widget type
-    /// </summary>
-    public static WidgetType CurrentWidgetType { get; private set; }
+    /// <summary>True if the widget is currently shown.</summary>
+    public static bool IsWidgetVisible => _widget != null && _widget.IsVisible;
 
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -69,19 +67,22 @@ public partial class App : WpfApplication
         // Load settings
         _settings = AppSettings.Load();
 
-        // Initialize shared services
+        // Initialize the always-on services. SpeedTestService is created lazily
+        // on first dashboard speed-test - the widget itself never needs it.
         _networkMonitor = new NetworkSpeedMonitor();
-        _speedTestService = new SpeedTestService();
+        _systemMonitor = new SystemMonitor();
 
-        // Create system tray icon
+        // System tray + auto-show the widget on startup
         _trayIcon = CreateTrayIcon();
+        ShowWidget();
 
-        // Create and show the widget based on settings
-        SwitchWidget(_settings.DefaultWidgetType);
+        // Compact the LOH and release startup peak allocations now that the
+        // app has settled into its quiet steady state.
+        GC.Collect(2, GCCollectionMode.Optimized, blocking: false, compacting: true);
     }
 
     /// <summary>
-    /// Creates the system tray icon with context menu
+    /// Creates the system tray icon with its context menu.
     /// </summary>
     private static NotifyIcon CreateTrayIcon()
     {
@@ -92,71 +93,35 @@ public partial class App : WpfApplication
             Text = "Throughput - Network Speed Monitor"
         };
 
-        // Create context menu
         var contextMenu = new ContextMenuStrip();
 
         var showWidget = new ToolStripMenuItem("Show Widget");
-        showWidget.Click += (s, e) =>
-        {
-            _currentWidget?.Show();
-            if (_currentWidget != null)
-            {
-                _currentWidget.WindowState = WindowState.Normal;
-                _currentWidget.Activate();
-            }
-        };
+        showWidget.Click += (s, e) => ShowWidget();
+
+        var hideWidget = new ToolStripMenuItem("Hide Widget");
+        hideWidget.Click += (s, e) => HideWidget();
 
         var openDashboard = new ToolStripMenuItem("Open Dashboard");
         openDashboard.Click += (s, e) => ShowMainWindow();
-
-        // Widget selection submenu
-        var widgetMenu = new ToolStripMenuItem("Widget Style");
-        foreach (WidgetType widgetType in Enum.GetValues<WidgetType>())
-        {
-            var item = new ToolStripMenuItem(GetWidgetDisplayName(widgetType));
-            item.Tag = widgetType;
-            item.Click += (s, e) =>
-            {
-                if (s is ToolStripMenuItem menuItem && menuItem.Tag is WidgetType type)
-                {
-                    SwitchWidget(type);
-                }
-            };
-            widgetMenu.DropDownItems.Add(item);
-        }
-
-        var separator = new ToolStripSeparator();
 
         var exitItem = new ToolStripMenuItem("Exit");
         exitItem.Click += (s, e) => ExitApplication();
 
         contextMenu.Items.Add(showWidget);
+        contextMenu.Items.Add(hideWidget);
         contextMenu.Items.Add(openDashboard);
-        contextMenu.Items.Add(widgetMenu);
-        contextMenu.Items.Add(separator);
+        contextMenu.Items.Add(new ToolStripSeparator());
         contextMenu.Items.Add(exitItem);
         icon.ContextMenuStrip = contextMenu;
 
-        // Double-click to open dashboard
+        // Double-click tray icon opens the dashboard
         icon.DoubleClick += (s, e) => ShowMainWindow();
 
         return icon;
     }
 
     /// <summary>
-    /// Gets display name for widget type
-    /// </summary>
-    private static string GetWidgetDisplayName(WidgetType type) => type switch
-    {
-        WidgetType.Full => "Full (Default)",
-        WidgetType.Compact => "Compact (Speed Only)",
-        WidgetType.Minimal => "Minimal (Download Only)",
-        WidgetType.SpeedTest => "Speed Test",
-        _ => type.ToString()
-    };
-
-    /// <summary>
-    /// Loads the tray icon
+    /// Loads the system tray icon from the Assets folder, falling back to a default.
     /// </summary>
     private static Icon LoadTrayIcon()
     {
@@ -174,47 +139,33 @@ public partial class App : WpfApplication
     }
 
     /// <summary>
-    /// Switches to a different widget type
+    /// Shows the widget. Creates it on first call; re-shows it on subsequent calls.
     /// </summary>
-    /// <param name="widgetType">The widget type to switch to</param>
-    /// <param name="saveAsDefault">Whether to save this as the default widget</param>
-    /// <param name="positionBelowWindow">Optional window to position the new widget below</param>
-    public static void SwitchWidget(WidgetType widgetType, bool saveAsDefault = false, Window? positionBelowWindow = null)
+    public static void ShowWidget()
     {
-        // Close current widget
-        _currentWidget?.Close();
-
-        // Create new widget
-        _currentWidget = widgetType switch
+        if (_widget == null)
         {
-            WidgetType.Full => new OverlayWindow(),
-            WidgetType.Compact => new CompactWidget(),
-            WidgetType.Minimal => new MinimalWidget(),
-            WidgetType.SpeedTest => new SpeedTestWidget(),
-            _ => new OverlayWindow()
-        };
-
-        CurrentWidgetType = widgetType;
-        
-        // Position below the specified window if provided
-        if (positionBelowWindow != null && positionBelowWindow.IsVisible)
-        {
-            _currentWidget.Left = positionBelowWindow.Left;
-            _currentWidget.Top = positionBelowWindow.Top + positionBelowWindow.ActualHeight + 10;
+            _widget = new Widget();
         }
-        
-        _currentWidget.Show();
 
-        // Save preference if requested
-        if (saveAsDefault)
+        _widget.Show();
+        if (_widget.WindowState == WindowState.Minimized)
         {
-            _settings.DefaultWidgetType = widgetType;
-            _settings.Save();
+            _widget.WindowState = WindowState.Normal;
         }
+        _widget.Activate();
     }
 
     /// <summary>
-    /// Shows the main dashboard window (creates it if needed)
+    /// Hides the widget without exiting the application. Tray icon stays available.
+    /// </summary>
+    public static void HideWidget()
+    {
+        _widget?.Hide();
+    }
+
+    /// <summary>
+    /// Shows the main dashboard window (creates it on first call).
     /// </summary>
     public static void ShowMainWindow()
     {
@@ -226,7 +177,6 @@ public partial class App : WpfApplication
         _mainAppWindow.Show();
         _mainAppWindow.Activate();
 
-        // Bring to front
         if (_mainAppWindow.WindowState == WindowState.Minimized)
         {
             _mainAppWindow.WindowState = WindowState.Normal;
@@ -234,7 +184,7 @@ public partial class App : WpfApplication
     }
 
     /// <summary>
-    /// Closes the main dashboard window
+    /// Hides the main dashboard window.
     /// </summary>
     public static void HideMainWindow()
     {
@@ -242,20 +192,19 @@ public partial class App : WpfApplication
     }
 
     /// <summary>
-    /// Exits the application and cleans up resources
+    /// Exits the application and cleans up resources.
     /// </summary>
     public static void ExitApplication()
     {
-        // Cleanup tray icon
         if (_trayIcon != null)
         {
             _trayIcon.Visible = false;
             _trayIcon.Dispose();
         }
 
-        // Cleanup services
         _networkMonitor?.Dispose();
         _speedTestService?.Dispose();
+        _systemMonitor?.Dispose();
 
         Current.Shutdown();
     }

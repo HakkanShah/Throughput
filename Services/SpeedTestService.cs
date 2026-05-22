@@ -27,13 +27,6 @@ public sealed class SpeedTestService : IDisposable
     private const string UploadUrl = "https://speed.cloudflare.com/__up";
     private const string LatencyUrl = "https://speed.cloudflare.com/__down?bytes=0";
 
-    // Fallback endpoints
-    private static readonly string[] FallbackDownloadUrls =
-    [
-        "https://proof.ovh.net/files/10Mb.dat",
-        "http://speedtest.tele2.net/10MB.zip"
-    ];
-
     public SpeedTestService()
     {
         _httpClient = new HttpClient
@@ -108,14 +101,6 @@ public sealed class SpeedTestService : IDisposable
             _isRunning = false;
             TestCompleted?.Invoke(result);
         }
-    }
-
-    /// <summary>
-    /// Legacy method for backward compatibility - runs download test only
-    /// </summary>
-    public async Task RunTestAsync(CancellationToken cancellationToken = default)
-    {
-        await RunFullTestAsync(cancellationToken);
     }
 
     /// <summary>

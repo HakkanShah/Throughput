@@ -9,12 +9,14 @@ public static class SpeedFormatter
     private static readonly string[] BitUnits = ["bps", "Kbps", "Mbps", "Gbps"];
 
     /// <summary>
-    /// Formats bytes per second to human readable format (B/s, KB/s, MB/s, GB/s)
+    /// Formats bytes per second to human readable format.
+    /// Always uses KB/s as the smallest unit (never raw bytes), scaling up to GB/s.
     /// </summary>
     public static string FormatBytesPerSecond(double bytesPerSecond)
     {
-        int unitIndex = 0;
-        double speed = bytesPerSecond;
+        // Start at KB/s so values below 1 KB/s still read as "0.0 KB/s"
+        int unitIndex = 1;
+        double speed = bytesPerSecond / 1024;
 
         while (speed >= 1024 && unitIndex < ByteUnits.Length - 1)
         {
@@ -22,9 +24,7 @@ public static class SpeedFormatter
             unitIndex++;
         }
 
-        return unitIndex == 0
-            ? $"{speed:F0} {ByteUnits[unitIndex]}"
-            : $"{speed:F1} {ByteUnits[unitIndex]}";
+        return $"{speed:F1} {ByteUnits[unitIndex]}";
     }
 
     /// <summary>
