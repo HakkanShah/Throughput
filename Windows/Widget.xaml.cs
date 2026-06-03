@@ -28,6 +28,9 @@ public partial class Widget : Window
     private readonly DispatcherTimer _updateTimer;
     private readonly DispatcherTimer _sizePersistTimer;
     private readonly WarningGlow _warningGlow;
+    // Re-raises the widget above the taskbar the instant anything else (the
+    // taskbar, a launching app, alt-tab) comes to the foreground.
+    private TopmostGuard? _topmostGuard;
     private System.Windows.Point _dragStartPosition;
     private bool _useNarrowLayout;
     // Tick counter - drives the periodic (cheap) topmost safety re-assertion.
@@ -61,18 +64,18 @@ public partial class Widget : Window
         {
             _updateTimer.Start();
             ApplyLayoutForWidth(); // pick correct layout for the initial width
+
+            // The window handle exists by Loaded, so the foreground hook can
+            // attach. This - not the old Deactivated toggle - is what keeps the
+            // widget above the taskbar when the user clicks it or opens an app.
+            _topmostGuard = new TopmostGuard(this);
         };
         Closing += (s, e) =>
         {
             _updateTimer.Stop();
             _sizePersistTimer.Stop();
-        };
-
-        // Re-apply topmost when deactivated (fixes taskbar click issue)
-        Deactivated += (s, e) =>
-        {
-            Topmost = false;
-            Topmost = true;
+            _topmostGuard?.Dispose();
+            _topmostGuard = null;
         };
 
         // Prevent minimizing - always restore if minimized
@@ -127,9 +130,10 @@ public partial class Widget : Window
         }
 
         // Re-assert visible+topmost only periodically (every ~30s), not every tick.
-        // The window has Topmost=True and a Deactivated handler that re-applies it,
-        // so this is purely a safety net for rare OS-level demotions.
-        if (++_tickCounter % 30 == 0)
+        // The TopmostGuard foreground hook handles the common cases instantly, so
+        // this is purely a safety net for rare OS-level demotions. Skip it when the
+        // widget is hidden (from the tray) so we don't force a hidden widget back.
+        if (++_tickCounter % 30 == 0 && IsVisible)
         {
             WindowHelper.ForceVisibleAndTopmost(this);
         }
