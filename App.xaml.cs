@@ -1,6 +1,7 @@
 using System.Drawing;
 using System.Windows;
 using System.Windows.Forms;
+using Throughput.Helpers;
 using Throughput.Models;
 using Throughput.Services;
 using Throughput.Windows;
@@ -66,6 +67,9 @@ public partial class App : WpfApplication
 
         // Load settings
         _settings = AppSettings.Load();
+        WarningGlow.AnimationEnabled = _settings.Animation.Enabled;
+        WarningGlow.WarningThreshold = _settings.Animation.WarningThreshold;
+        WarningGlow.CriticalThreshold = _settings.Animation.CriticalThreshold;
 
         // Initialize the always-on services. SpeedTestService is created lazily
         // on first dashboard speed-test - the widget itself never needs it.

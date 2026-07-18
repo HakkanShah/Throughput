@@ -32,11 +32,14 @@ public enum WarningLevel
 /// </summary>
 public sealed class WarningGlow
 {
-    /// <summary>Usage percentage at or above which the yellow warning shows.</summary>
-    public const double WarningThreshold = 75.0;
+    /// <summary>Usage percentage at or above which the yellow warning shows. User-configurable.</summary>
+    public static double WarningThreshold { get; set; } = 75.0;
 
-    /// <summary>Usage percentage at or above which the red critical warning shows.</summary>
-    public const double CriticalThreshold = 90.0;
+    /// <summary>Usage percentage at or above which the red critical warning shows. User-configurable.</summary>
+    public static double CriticalThreshold { get; set; } = 90.0;
+
+    /// <summary>Whether the animated border snake is allowed to show at all. User-configurable.</summary>
+    public static bool AnimationEnabled { get; set; } = true;
 
     private static readonly Color WarningColor = Color.FromRgb(0xFA, 0xCC, 0x15);  // amber
     private static readonly Color CriticalColor = Color.FromRgb(0xEF, 0x44, 0x44); // red
@@ -145,6 +148,13 @@ public sealed class WarningGlow
     /// </summary>
     public void Update(double cpuPercent, double memoryPercent)
     {
+        if (!AnimationEnabled)
+        {
+            if (_currentLevel != WarningLevel.Normal) StopSnake();
+            _currentLevel = WarningLevel.Normal;
+            return;
+        }
+
         var level = LevelFor(Math.Max(cpuPercent, memoryPercent));
 
         // The snake needs the widget's measured size. If the level wants a snake

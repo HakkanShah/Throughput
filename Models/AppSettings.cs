@@ -24,6 +24,16 @@ public class WidgetSize
 }
 
 /// <summary>
+/// User-configurable settings for the border warning-glow animation.
+/// </summary>
+public class AnimationSettings
+{
+    public bool Enabled { get; set; } = true;
+    public double WarningThreshold { get; set; } = 75.0;
+    public double CriticalThreshold { get; set; } = 90.0;
+}
+
+/// <summary>
 /// Application settings with JSON persistence
 /// </summary>
 public class AppSettings
@@ -43,6 +53,11 @@ public class AppSettings
     /// The saved size of the widget (set when the user resizes it)
     /// </summary>
     public WidgetSize WidgetSize { get; set; } = new();
+
+    /// <summary>
+    /// The user's configuration for the border warning-glow animation
+    /// </summary>
+    public AnimationSettings Animation { get; set; } = new();
 
     /// <summary>
     /// Gets the saved widget position, or null if it has never been set
@@ -86,6 +101,24 @@ public class AppSettings
             Width = width,
             Height = height,
             HasBeenSet = true
+        };
+        Save();
+    }
+
+    /// <summary>
+    /// Saves the user's animation preferences. Thresholds are clamped so the
+    /// warning threshold stays below the critical threshold.
+    /// </summary>
+    public void SaveAnimationSettings(bool enabled, double warningThreshold, double criticalThreshold)
+    {
+        double clampedWarning = Math.Clamp(warningThreshold, 1, 99);
+        double clampedCritical = Math.Clamp(criticalThreshold, clampedWarning + 1, 100);
+
+        Animation = new AnimationSettings
+        {
+            Enabled = enabled,
+            WarningThreshold = clampedWarning,
+            CriticalThreshold = clampedCritical
         };
         Save();
     }

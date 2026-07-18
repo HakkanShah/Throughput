@@ -14,10 +14,18 @@ public partial class MainAppWindow : Window
     private readonly DispatcherTimer _updateTimer;
     private CancellationTokenSource? _speedTestCts;
     private bool _isTestRunning;
+    private bool? _lastWidgetVisible;
+
+    // Starts true so slider ValueChanged notifications fired while
+    // InitializeComponent is still parsing (before every named field is
+    // assigned) are ignored instead of touching a sibling that isn't set yet.
+    private bool _loadingAnimationSettings = true;
 
     public MainAppWindow()
     {
         InitializeComponent();
+        LoadAnimationSettings();
+        _loadingAnimationSettings = false;
 
         // Set up update timer for live throughput
         _updateTimer = new DispatcherTimer
@@ -43,17 +51,32 @@ public partial class MainAppWindow : Window
     }
 
     /// <summary>
+    /// Applies the acrylic frosted-glass backdrop once the native window handle exists.
+    /// </summary>
+    protected override void OnSourceInitialized(EventArgs e)
+    {
+        base.OnSourceInitialized(e);
+        AcrylicGlass.Enable(this);
+    }
+
+    /// <summary>
     /// Updates the Launch Widget button + status text to reflect whether the
     /// widget is currently visible.
     /// </summary>
     private void UpdateWidgetStatus()
     {
         bool visible = App.IsWidgetVisible;
-        LaunchWidgetButton.Content = visible ? "Widget is shown" : "Launch Widget";
-        LaunchWidgetButton.IsEnabled = !visible;
-        WidgetStatusText.Text = visible
-            ? "Widget is visible on your desktop"
-            : "Widget is hidden";
+
+        // Only re-skin when the state flips; this runs every second.
+        if (_lastWidgetVisible == visible) return;
+        _lastWidgetVisible = visible;
+
+        LaunchWidgetButton.Content = visible ? "Hide Widget" : "Launch Widget";
+        LaunchWidgetButton.Style = (Style)FindResource(visible ? "SecondaryButton" : "PrimaryButton");
+        WidgetStatusText.Text = visible ? "Visible on desktop" : "Hidden";
+        WidgetStatusDot.Fill = visible
+            ? new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x3D, 0xDC, 0xA4)) // green
+            : new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x89, 0x92, 0xA6)); // dim
     }
 
     /// <summary>
@@ -251,12 +274,90 @@ public partial class MainAppWindow : Window
     }
 
     /// <summary>
-    /// Shows (re-launches) the widget on user click.
+    /// Toggles the desktop widget: hides it when visible, shows it when hidden.
     /// </summary>
     private void LaunchWidgetButton_Click(object sender, RoutedEventArgs e)
     {
-        App.ShowWidget();
+        if (App.IsWidgetVisible)
+            App.HideWidget();
+        else
+            App.ShowWidget();
+
         UpdateWidgetStatus();
+    }
+
+    // ---- Border warning animation settings ----
+
+    /// <summary>
+    /// Populates the animation controls from the currently saved settings.
+    /// </summary>
+    private void LoadAnimationSettings()
+    {
+        var animation = App.Settings.Animation;
+        AnimationEnabledCheckBox.IsChecked = animation.Enabled;
+        WarningSlider.Value = animation.WarningThreshold;
+        CriticalSlider.Value = animation.CriticalThreshold;
+        WarningSlider.IsEnabled = animation.Enabled;
+        CriticalSlider.IsEnabled = animation.Enabled;
+        UpdateAnimationLabels();
+    }
+
+    /// <summary>
+    /// Keeps the critical slider from dropping to or below the warning slider.
+    /// </summary>
+    private void WarningSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (_loadingAnimationSettings) return;
+
+        if (CriticalSlider.Value <= WarningSlider.Value)
+        {
+            CriticalSlider.Value = Math.Min(CriticalSlider.Maximum, WarningSlider.Value + 1);
+        }
+        UpdateAnimationLabels();
+    }
+
+    /// <summary>
+    /// Keeps the warning slider from rising to or above the critical slider.
+    /// </summary>
+    private void CriticalSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (_loadingAnimationSettings) return;
+
+        if (WarningSlider.Value >= CriticalSlider.Value)
+        {
+            WarningSlider.Value = Math.Max(WarningSlider.Minimum, CriticalSlider.Value - 1);
+        }
+        UpdateAnimationLabels();
+    }
+
+    private void UpdateAnimationLabels()
+    {
+        WarningValueText.Text = $"{WarningSlider.Value:F0}%";
+        CriticalValueText.Text = $"{CriticalSlider.Value:F0}%";
+    }
+
+    private void AnimationEnabledCheckBox_CheckedChanged(object sender, RoutedEventArgs e)
+    {
+        if (_loadingAnimationSettings) return;
+
+        bool enabled = AnimationEnabledCheckBox.IsChecked == true;
+        WarningSlider.IsEnabled = enabled;
+        CriticalSlider.IsEnabled = enabled;
+    }
+
+    /// <summary>
+    /// Persists the chosen animation settings and applies them to the live widget immediately.
+    /// </summary>
+    private void SaveAnimationButton_Click(object sender, RoutedEventArgs e)
+    {
+        bool enabled = AnimationEnabledCheckBox.IsChecked == true;
+        App.Settings.SaveAnimationSettings(enabled, WarningSlider.Value, CriticalSlider.Value);
+
+        WarningGlow.AnimationEnabled = App.Settings.Animation.Enabled;
+        WarningGlow.WarningThreshold = App.Settings.Animation.WarningThreshold;
+        WarningGlow.CriticalThreshold = App.Settings.Animation.CriticalThreshold;
+
+        AnimationSavedText.Text = "Saved";
     }
 }
 
