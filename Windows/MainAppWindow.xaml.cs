@@ -46,8 +46,68 @@ public partial class MainAppWindow : Window
         {
             _updateTimer.Start();
             UpdateWidgetStatus();
+            VersionText.Text = AppInfo.DisplayVersion;
+            RefreshUpdateUi();
+        };
+
+        // Keep the dashboard a floating panel - never let Aero-snap / maximize
+        // stretch it full-screen (it looks broken and the resize grip becomes
+        // unreachable). MaxWidth/MaxHeight in XAML cap the size; this snaps any
+        // maximize attempt back to a normal window.
+        StateChanged += (s, e) =>
+        {
+            if (WindowState == WindowState.Maximized) WindowState = WindowState.Normal;
         };
         Closing += MainAppWindow_Closing;
+    }
+
+    // ---- Update check (footer) ----
+
+    /// <summary>
+    /// Shows the "Update available" pill when a newer release is known, otherwise
+    /// the "Check for updates" link.
+    /// </summary>
+    private void RefreshUpdateUi()
+    {
+        bool hasUpdate = App.AvailableUpdate != null;
+        UpdatePill.Visibility = hasUpdate ? Visibility.Visible : Visibility.Collapsed;
+        CheckUpdatesLink.Visibility = hasUpdate ? Visibility.Collapsed : Visibility.Visible;
+    }
+
+    private void UpdatePill_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        e.Handled = true;
+        App.ShowUpdateWindow();
+    }
+
+    private async void CheckUpdates_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        e.Handled = true;
+        CheckUpdatesLink.IsHitTestVisible = false;
+        CheckUpdatesLink.Text = "Checking…";
+
+        try
+        {
+            var info = await App.Updater.CheckForUpdateAsync();
+            if (info != null)
+            {
+                App.OnUpdateFound(info);
+                RefreshUpdateUi();
+                App.ShowUpdateWindow();
+            }
+            else
+            {
+                CheckUpdatesLink.Text = "Up to date";
+            }
+        }
+        catch
+        {
+            CheckUpdatesLink.Text = "Check failed";
+        }
+        finally
+        {
+            CheckUpdatesLink.IsHitTestVisible = true;
+        }
     }
 
     /// <summary>

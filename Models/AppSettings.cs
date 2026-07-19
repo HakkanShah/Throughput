@@ -34,6 +34,21 @@ public class AnimationSettings
 }
 
 /// <summary>
+/// User-configurable settings for the in-app auto-updater.
+/// </summary>
+public class UpdateSettings
+{
+    /// <summary>Whether the app checks GitHub for a newer release on launch.</summary>
+    public bool AutoCheckEnabled { get; set; } = true;
+
+    /// <summary>
+    /// A version the user chose to skip (e.g. "3.2.0"); the popup won't auto-appear
+    /// for this version, though a manual check still surfaces it.
+    /// </summary>
+    public string? SkippedVersion { get; set; }
+}
+
+/// <summary>
 /// Application settings with JSON persistence
 /// </summary>
 public class AppSettings
@@ -58,6 +73,11 @@ public class AppSettings
     /// The user's configuration for the border warning-glow animation
     /// </summary>
     public AnimationSettings Animation { get; set; } = new();
+
+    /// <summary>
+    /// The user's auto-updater preferences.
+    /// </summary>
+    public UpdateSettings Update { get; set; } = new();
 
     /// <summary>
     /// Gets the saved widget position, or null if it has never been set
@@ -120,6 +140,24 @@ public class AppSettings
             WarningThreshold = clampedWarning,
             CriticalThreshold = clampedCritical
         };
+        Save();
+    }
+
+    /// <summary>
+    /// Records a version the user chose to skip (or clears it with null).
+    /// </summary>
+    public void SaveSkippedVersion(string? version)
+    {
+        Update.SkippedVersion = version;
+        Save();
+    }
+
+    /// <summary>
+    /// Enables or disables the on-launch update check.
+    /// </summary>
+    public void SaveAutoCheck(bool enabled)
+    {
+        Update.AutoCheckEnabled = enabled;
         Save();
     }
 

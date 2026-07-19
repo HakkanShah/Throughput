@@ -4,6 +4,7 @@
         Title="Throughput - Network Dashboard"
         Width="440" Height="680"
         MinWidth="380" MinHeight="440"
+        MaxWidth="600" MaxHeight="1000"
         WindowStartupLocation="CenterScreen"
         WindowStyle="None"
         AllowsTransparency="False"
@@ -15,116 +16,7 @@
         ResizeMode="CanResizeWithGrip">
 
     <Window.Resources>
-        <!-- ===== Palette (frosted glass) ===== -->
-        <SolidColorBrush x:Key="TextPrimary" Color="#F6F8FE"/>
-        <SolidColorBrush x:Key="TextMuted"   Color="#B6BECE"/>
-        <SolidColorBrush x:Key="TextDim"     Color="#8992A6"/>
-        <SolidColorBrush x:Key="Stroke"      Color="#33FFFFFF"/>
-        <SolidColorBrush x:Key="CardBg"      Color="#16FFFFFF"/>
-        <SolidColorBrush x:Key="InsetBg"     Color="#10FFFFFF"/>
-        <SolidColorBrush x:Key="TrackBg"     Color="#26FFFFFF"/>
-        <SolidColorBrush x:Key="Accent"      Color="#5C9BFF"/>
-        <SolidColorBrush x:Key="Green"       Color="#3DDCA4"/>
-        <SolidColorBrush x:Key="Rose"        Color="#F87BC0"/>
-        <SolidColorBrush x:Key="Yellow"      Color="#FBBF24"/>
-        <SolidColorBrush x:Key="Red"         Color="#F87171"/>
-
-        <!-- ===== Card ===== -->
-        <Style x:Key="CardStyle" TargetType="Border">
-            <Setter Property="Background" Value="{StaticResource CardBg}"/>
-            <Setter Property="BorderBrush" Value="{StaticResource Stroke}"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="CornerRadius" Value="14"/>
-            <Setter Property="Padding" Value="18"/>
-            <Setter Property="Margin" Value="0,0,0,14"/>
-            <Setter Property="Effect">
-                <Setter.Value>
-                    <DropShadowEffect Color="Black" BlurRadius="14" ShadowDepth="3" Opacity="0.22"/>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
-        <!-- ===== Primary button ===== -->
-        <Style x:Key="PrimaryButton" TargetType="Button">
-            <Setter Property="Foreground" Value="White"/>
-            <Setter Property="FontSize" Value="13"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="Padding" Value="14,11"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="HorizontalAlignment" Value="Stretch"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border x:Name="border" CornerRadius="11" Padding="{TemplateBinding Padding}"
-                                RenderTransformOrigin="0.5,0.5">
-                            <Border.Background>
-                                <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-                                    <GradientStop Color="#4C8DFF" Offset="0"/>
-                                    <GradientStop Color="#2563EB" Offset="1"/>
-                                </LinearGradientBrush>
-                            </Border.Background>
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="border" Property="Effect">
-                                    <Setter.Value>
-                                        <DropShadowEffect Color="#4C8DFF" BlurRadius="18" ShadowDepth="0" Opacity="0.6"/>
-                                    </Setter.Value>
-                                </Setter>
-                            </Trigger>
-                            <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="border" Property="Opacity" Value="0.9"/>
-                                <Setter TargetName="border" Property="RenderTransform">
-                                    <Setter.Value>
-                                        <ScaleTransform ScaleX="0.96" ScaleY="0.96"/>
-                                    </Setter.Value>
-                                </Setter>
-                            </Trigger>
-                            <Trigger Property="IsEnabled" Value="False">
-                                <Setter TargetName="border" Property="Opacity" Value="0.45"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
-        <!-- ===== Secondary / glass button (e.g. Hide Widget) ===== -->
-        <Style x:Key="SecondaryButton" TargetType="Button">
-            <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
-            <Setter Property="FontSize" Value="13"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="Padding" Value="14,11"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="HorizontalAlignment" Value="Stretch"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border x:Name="border" CornerRadius="11" Background="#14FFFFFF"
-                                BorderBrush="#38FFFFFF" BorderThickness="1"
-                                Padding="{TemplateBinding Padding}" RenderTransformOrigin="0.5,0.5">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="border" Property="Background" Value="#22FFFFFF"/>
-                                <Setter TargetName="border" Property="BorderBrush" Value="#55FFFFFF"/>
-                            </Trigger>
-                            <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="border" Property="Background" Value="#0CFFFFFF"/>
-                                <Setter TargetName="border" Property="RenderTransform">
-                                    <Setter.Value>
-                                        <ScaleTransform ScaleX="0.96" ScaleY="0.96"/>
-                                    </Setter.Value>
-                                </Setter>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
+        <!-- Shared palette + CardStyle/PrimaryButton/SecondaryButton live in App.xaml. -->
 
         <!-- ===== Window control button (min / close) ===== -->
         <Style x:Key="ChromeButton" TargetType="Border">
@@ -233,48 +125,7 @@
             </Setter>
         </Style>
 
-        <!-- ===== Thin scrollbar ===== -->
-        <Style TargetType="ScrollBar">
-            <Setter Property="Width" Value="8"/>
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="ScrollBar">
-                        <Grid Background="Transparent">
-                            <Track x:Name="PART_Track" IsDirectionReversed="True">
-                                <Track.DecreaseRepeatButton>
-                                    <RepeatButton Command="ScrollBar.PageUpCommand" Focusable="False">
-                                        <RepeatButton.Template>
-                                            <ControlTemplate TargetType="RepeatButton">
-                                                <Border Background="Transparent"/>
-                                            </ControlTemplate>
-                                        </RepeatButton.Template>
-                                    </RepeatButton>
-                                </Track.DecreaseRepeatButton>
-                                <Track.IncreaseRepeatButton>
-                                    <RepeatButton Command="ScrollBar.PageDownCommand" Focusable="False">
-                                        <RepeatButton.Template>
-                                            <ControlTemplate TargetType="RepeatButton">
-                                                <Border Background="Transparent"/>
-                                            </ControlTemplate>
-                                        </RepeatButton.Template>
-                                    </RepeatButton>
-                                </Track.IncreaseRepeatButton>
-                                <Track.Thumb>
-                                    <Thumb>
-                                        <Thumb.Template>
-                                            <ControlTemplate TargetType="Thumb">
-                                                <Border CornerRadius="3" Width="5" Background="#4DFFFFFF"/>
-                                            </ControlTemplate>
-                                        </Thumb.Template>
-                                    </Thumb>
-                                </Track.Thumb>
-                            </Track>
-                        </Grid>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
+        <!-- Thin scrollbar lives in App.xaml (shared). -->
     </Window.Resources>
 
     <!-- Root shell: background is the native acrylic backdrop; this border only
@@ -573,9 +424,29 @@
                         <Run Text="Hakkan" FontSize="11" TextDecorations="Underline"
                              FontWeight="SemiBold" Foreground="{StaticResource TextMuted}"/>
                     </TextBlock>
-                    <TextBlock Text="v3.0.0" FontSize="11" FontWeight="SemiBold"
-                               Foreground="{StaticResource TextDim}"
-                               HorizontalAlignment="Right" VerticalAlignment="Center"/>
+
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                        <!-- Update-available pill (shown when a newer release is known) -->
+                        <Border x:Name="UpdatePill" Visibility="Collapsed" Cursor="Hand"
+                                Background="#223DDCA4" BorderBrush="#553DDCA4" BorderThickness="1"
+                                CornerRadius="10" Padding="10,4" Margin="0,0,10,0"
+                                MouseLeftButtonDown="UpdatePill_Click" ToolTip="A new version is available">
+                            <StackPanel Orientation="Horizontal">
+                                <Ellipse Width="7" Height="7" Fill="{StaticResource Green}" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                <TextBlock Text="Update available" FontSize="11" FontWeight="SemiBold"
+                                           Foreground="{StaticResource Green}" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Manual check link (shown when no update is known) -->
+                        <TextBlock x:Name="CheckUpdatesLink" Text="Check for updates" Cursor="Hand"
+                                   FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource TextMuted}"
+                                   TextDecorations="Underline" VerticalAlignment="Center" Margin="0,0,12,0"
+                                   MouseLeftButtonDown="CheckUpdates_Click"/>
+
+                        <TextBlock x:Name="VersionText" Text="v0.0.0" FontSize="11" FontWeight="SemiBold"
+                                   Foreground="{StaticResource TextDim}" VerticalAlignment="Center"/>
+                    </StackPanel>
                 </Grid>
             </Border>
         </Grid>
