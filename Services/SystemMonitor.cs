@@ -5,47 +5,70 @@ namespace Throughput.Services;
 
 /// <summary>
 /// Monitors real-time CPU and memory (RAM) usage using lightweight Win32 calls
-/// (<c>GetSystemTimes</c> + <c>GlobalMemoryStatusEx</c>). This deliberately avoids
-/// <see cref="System.Diagnostics.PerformanceCounter"/>, whose PDH machinery adds
-/// tens of megabytes of idle memory to the process.
+/// (<c>GetSystemTimes</c> + <c>GlobalMemoryStatusEx</c>), sampled on its own
+/// 1-second timer and cached so the widget and dashboard always read the same
+/// value. This deliberately avoids <see cref="System.Diagnostics.PerformanceCounter"/>,
+/// whose PDH machinery adds tens of megabytes of idle memory to the process.
 /// </summary>
 public sealed class SystemMonitor : IDisposable
 {
+    private readonly System.Threading.Timer _sampleTimer;
+    private readonly object _lock = new();
+
     private ulong _prevIdle;
     private ulong _prevKernel;
     private ulong _prevUser;
     private bool _hasPrevSample;
+
+    private double _cpu;
+    private double _memPercent;
+    private double _memUsedGb;
+    private double _memTotalGb;
     private bool _disposed;
 
     public SystemMonitor()
     {
-        // Prime the CPU baseline so the first GetUsage() call already has a delta.
-        if (GetSystemTimes(out var idle, out var kernel, out var user))
-        {
-            _prevIdle = ToUInt64(idle);
-            _prevKernel = ToUInt64(kernel);
-            _prevUser = ToUInt64(user);
-            _hasPrevSample = true;
-        }
+        Sample(); // prime CPU baseline + fill initial memory values
+        _sampleTimer = new System.Threading.Timer(_ => SafeSample(), null,
+            dueTime: 1000, period: 1000);
+    }
+
+    /// <summary>Total physical RAM in gigabytes.</summary>
+    public double TotalMemoryGb
+    {
+        get { lock (_lock) return _memTotalGb; }
     }
 
     /// <summary>
-    /// Total physical RAM in gigabytes.
+    /// Gets the most recent CPU and memory usage from the monitor's 1-second sampling
+    /// loop: CpuPercent (0-100), MemoryPercent (0-100), MemoryUsedGb and MemoryTotalGb.
     /// </summary>
-    public double TotalMemoryGb => ReadMemory().TotalGb;
-
-    /// <summary>
-    /// Gets the current CPU and memory usage.
-    /// </summary>
-    /// <returns>
-    /// CpuPercent (0-100), MemoryPercent (0-100),
-    /// MemoryUsedGb and MemoryTotalGb.
-    /// </returns>
     public (double CpuPercent, double MemoryPercent, double MemoryUsedGb, double MemoryTotalGb) GetUsage()
+    {
+        lock (_lock)
+        {
+            return (_cpu, _memPercent, _memUsedGb, _memTotalGb);
+        }
+    }
+
+    private void SafeSample()
+    {
+        try { Sample(); }
+        catch (Exception ex) { Debug.WriteLine($"System sample failed: {ex.Message}"); }
+    }
+
+    private void Sample()
     {
         double cpu = ReadCpuPercent();
         var (memPercent, usedGb, totalGb) = ReadMemory();
-        return (cpu, memPercent, usedGb, totalGb);
+
+        lock (_lock)
+        {
+            _cpu = cpu;
+            _memPercent = memPercent;
+            _memUsedGb = usedGb;
+            _memTotalGb = totalGb;
+        }
     }
 
     /// <summary>
@@ -144,5 +167,6 @@ public sealed class SystemMonitor : IDisposable
     {
         if (_disposed) return;
         _disposed = true;
+        _sampleTimer.Dispose();
     }
 }
