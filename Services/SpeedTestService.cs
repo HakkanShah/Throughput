@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Net;
 using System.Net.Http;
 using System.Security.Cryptography;
 using Throughput.Models;
@@ -29,9 +30,23 @@ public sealed class SpeedTestService : IDisposable
 
     public SpeedTestService()
     {
-        _httpClient = new HttpClient
+        // Force HTTP/1.1 so each of the parallel workers gets its own independent
+        // TCP connection. Left on the default (HTTP/2), Cloudflare multiplexes all
+        // workers onto one connection whose small flow-control window collapses
+        // throughput over a high-latency link - reporting a fraction of the real
+        // speed. Independent HTTP/1.1 connections saturate the link like curl does.
+        var handler = new SocketsHttpHandler
         {
-            Timeout = TimeSpan.FromSeconds(60)
+            MaxConnectionsPerServer = ParallelConnections * 2,
+            AutomaticDecompression = DecompressionMethods.None,
+            PooledConnectionLifetime = TimeSpan.FromMinutes(1)
+        };
+
+        _httpClient = new HttpClient(handler)
+        {
+            Timeout = TimeSpan.FromSeconds(60),
+            DefaultRequestVersion = HttpVersion.Version11,
+            DefaultVersionPolicy = HttpVersionPolicy.RequestVersionOrLower
         };
         _httpClient.DefaultRequestHeaders.Add("User-Agent", "Throughput/2.0");
     }
@@ -346,8 +361,10 @@ public sealed class SpeedTestService : IDisposable
     /// </summary>
     private async Task UploadWorkerAsync(Action<long> onBytesSent, CancellationToken ct)
     {
-        // Generate 1MB of random data to upload repeatedly
-        const int chunkSize = 1024 * 1024;
+        // Upload in modest chunks so each POST completes well within the test
+        // window even on slow uplinks (a full 1MB chunk could exceed it and
+        // never get counted, reporting 0).
+        const int chunkSize = 256 * 1024;
         var randomData = new byte[chunkSize];
         RandomNumberGenerator.Fill(randomData);
 
