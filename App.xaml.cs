@@ -81,8 +81,11 @@ public partial class App : WpfApplication
         ShowWidget();
 
         // Compact the LOH and release startup peak allocations now that the
-        // app has settled into its quiet steady state.
+        // app has settled into its quiet steady state, then hand the freed
+        // pages back to the OS once the startup work drains.
         GC.Collect(2, GCCollectionMode.Optimized, blocking: false, compacting: true);
+        Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.ApplicationIdle,
+            () => MemoryTrimmer.Trim());
     }
 
     /// <summary>

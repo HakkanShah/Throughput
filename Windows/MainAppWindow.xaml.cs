@@ -202,6 +202,9 @@ public partial class MainAppWindow : Window
                 TestStatusText.Foreground = new System.Windows.Media.SolidColorBrush(
                     System.Windows.Media.Color.FromRgb(0xef, 0x44, 0x44)); // Red
             }
+
+            // The test allocates transient upload/download buffers; reclaim them.
+            MemoryTrimmer.Trim();
         });
     }
 
@@ -232,6 +235,8 @@ public partial class MainAppWindow : Window
     {
         e.Handled = true;
         Hide();
+        // Dashboard is the heaviest window; release its pages while it's closed.
+        MemoryTrimmer.Trim();
     }
 
     /// <summary>
