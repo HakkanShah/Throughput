@@ -17,7 +17,7 @@
     <!-- Assembly Information -->
     <AssemblyName>Throughput</AssemblyName>
     <RootNamespace>Throughput</RootNamespace>
-    <Version>3.1.2</Version>
+    <Version>3.1.3</Version>
     <Authors>Hakkan</Authors>
     <Company></Company>
     <Product>Throughput</Product>
@@ -40,11 +40,17 @@
 
   <!-- Release-only size optimisations. Kept out of Debug so dev/build is unaffected. -->
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">
-    <!-- Drop the locale-specific ICU/CLDR data we don't need. The widget only
-         formats numbers/percentages with invariant culture, saving a few MB. -->
-    <InvariantGlobalization>true</InvariantGlobalization>
+    <!-- NOTE: InvariantGlobalization must stay OFF.
+         WPF is not supported in globalization-invariant mode. Its font machinery
+         resolves family names per culture, so laying out text in a named font
+         calls CultureInfo("en-us"), which throws CultureNotFoundException when the
+         switch is on. That surfaces as a "type initializer for
+         MS.Internal.FontCache.MajorLanguages threw an exception" crash - and only
+         in Release, which is why Debug testing never caught it (shipped broken in
+         3.1.0-3.1.2; the crash needed release notes containing an inline code span
+         to trigger the Consolas lookup). The few MB of ICU data are not worth it.
 
-    <!-- NOTE: trimming is OFF.
+         NOTE: trimming is OFF.
          WPF + WinForms rely heavily on runtime reflection that the IL trimmer
          cannot prove is live, so even <TrimMode>partial</TrimMode> with the
          suppress-error flags strips types XAML loads at startup, causing the

@@ -66,10 +66,15 @@ public partial class App : WpfApplication
     {
         base.OnStartup(e);
 
-        // Handle unhandled exceptions
+        // Handle unhandled exceptions. The full exception (including inner
+        // exceptions and stack) goes to a log file - a bare Message is rarely
+        // enough to diagnose failures that only reproduce in Release builds.
         DispatcherUnhandledException += (s, args) =>
         {
-            System.Windows.MessageBox.Show($"An error occurred: {args.Exception.Message}",
+            string log = LogException(args.Exception);
+
+            System.Windows.MessageBox.Show(
+                $"An error occurred: {args.Exception.Message}\n\nDetails written to:\n{log}",
                 "Throughput Error",
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
@@ -135,6 +140,29 @@ public partial class App : WpfApplication
         {
             // Offline / API error / parse failure: silently skip the auto-check.
         }
+    }
+
+    /// <summary>
+    /// Appends a full exception dump to %APPDATA%\Throughput\error.log and returns
+    /// the log path. Best-effort: never throws from the crash handler itself.
+    /// </summary>
+    private static string LogException(Exception ex)
+    {
+        string path = System.IO.Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+            "Throughput", "error.log");
+
+        try
+        {
+            var dir = System.IO.Path.GetDirectoryName(path);
+            if (!string.IsNullOrEmpty(dir)) System.IO.Directory.CreateDirectory(dir);
+
+            System.IO.File.AppendAllText(path,
+                $"===== {DateTime.Now:yyyy-MM-dd HH:mm:ss}  v{AppInfo.Current} =====\n{ex}\n\n");
+        }
+        catch { }
+
+        return path;
     }
 
     /// <summary>
