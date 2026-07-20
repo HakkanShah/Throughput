@@ -81,14 +81,19 @@ public partial class App : WpfApplication
         WarningGlow.WarningThreshold = _settings.Animation.WarningThreshold;
         WarningGlow.CriticalThreshold = _settings.Animation.CriticalThreshold;
 
-        // Initialize the always-on services. SpeedTestService is created lazily
-        // on first dashboard speed-test - the widget itself never needs it.
-        _networkMonitor = new NetworkSpeedMonitor();
-        _systemMonitor = new SystemMonitor();
-
         // System tray + auto-show the widget on startup
         _trayIcon = CreateTrayIcon();
         ShowWidget();
+
+        // Build the always-on monitors off the startup path - enumerating network
+        // adapters takes long enough to visibly delay the widget's first paint at
+        // boot. Both readers null-check these, so the first tick just reads 0.
+        // SpeedTestService stays lazy; only the dashboard's speed test needs it.
+        _ = Task.Run(() =>
+        {
+            _networkMonitor = new NetworkSpeedMonitor();
+            _systemMonitor = new SystemMonitor();
+        });
 
         // Check GitHub for a newer release in the background (non-blocking).
         _ = CheckForUpdatesOnStartupAsync();
