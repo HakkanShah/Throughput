@@ -3,7 +3,7 @@
 ; Website: https://hakkan.is-a.dev
 
 #define MyAppName "Throughput"
-#define MyAppVersion "3.1.3"
+#define MyAppVersion "3.1.4"
 #define MyAppPublisher "Hakkan"
 #define MyAppURL "https://hakkan.is-a.dev"
 #define MyAppExeName "Throughput.exe"
@@ -78,8 +78,13 @@ Type: files; Name: "{userstartup}\{#MyAppName}.lnk"
 ; NOTE: the logon task is registered from [Code] (CurStepChanged) rather than here,
 ; so that silent auto-updates can migrate users who previously used the Startup
 ; folder - in /SILENT mode Inno falls back to default task selections.
-; Run after install
+; Run after install (interactive): the usual finish-page "Launch" checkbox.
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
+; Run after install (silent): the in-app updater installs with /SILENT, which skips
+; the entry above, so the widget would never come back on its own. /RESTARTAPPLICATIONS
+; can't cover this either - the app exits by itself rather than being closed by
+; Restart Manager, so RM has nothing registered to restart.
+Filename: "{app}\{#MyAppExeName}"; Flags: nowait runasoriginaluser; Check: WizardSilent
 
 ; NOTE: no [UninstallRun] for the logon task - schtasks.exe requires elevation and
 ; this installer runs as a standard user. Removal is done via the Task Scheduler

@@ -257,11 +257,14 @@ public sealed class UpdateService : IDisposable
     {
         if (IsInstalledMode)
         {
-            // Inno Setup in-place upgrade; Restart Manager closes and relaunches us.
+            // Inno Setup in-place upgrade. The installer relaunches the app itself
+            // (see the WizardSilent [Run] entry in setup.iss). /RESTARTAPPLICATIONS is
+            // deliberately NOT passed: it only restarts what Restart Manager closed,
+            // and passing it alongside the [Run] entry risks launching two instances.
             Process.Start(new ProcessStartInfo
             {
                 FileName = downloadedPath,
-                Arguments = "/SILENT /CLOSEAPPLICATIONS /RESTARTAPPLICATIONS /NORESTART",
+                Arguments = "/SILENT /CLOSEAPPLICATIONS /NORESTART",
                 UseShellExecute = true // allow a UAC prompt if the user installed to Program Files
             });
         }

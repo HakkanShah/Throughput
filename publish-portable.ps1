@@ -3,7 +3,7 @@
 
 $ErrorActionPreference = "Stop"
 
-Write-Host "Building Throughput v3.1.3 - Portable Edition" -ForegroundColor Cyan
+Write-Host "Building Throughput v3.1.4 - Portable Edition" -ForegroundColor Cyan
 Write-Host "=" * 50
 
 # Clean previous builds
