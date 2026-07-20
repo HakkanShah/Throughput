@@ -21,6 +21,7 @@ public partial class App : WpfApplication
     private static NotifyIcon? _trayIcon;
     private static ToolStripMenuItem? _updateMenuItem;
     private static Icon? _badgeIcon;
+    private static bool _balloonHandlerAttached;
     private static AppSettings _settings = new();
 
     // Shared services - accessible from the widget and the dashboard
@@ -259,6 +260,29 @@ public partial class App : WpfApplication
     {
         AvailableUpdate = info;
         SetTrayUpdateAvailable(info);
+    }
+
+    /// <summary>
+    /// Raises a tray notification once an update finishes downloading, so a user who
+    /// minimized the updater and went back to work knows it's ready to install.
+    /// Clicking the notification brings the updater back up.
+    /// </summary>
+    public static void NotifyUpdateReady(UpdateInfo info)
+    {
+        if (_trayIcon == null) return;
+
+        if (!_balloonHandlerAttached)
+        {
+            _trayIcon.BalloonTipClicked += (_, _) => ShowUpdateWindow();
+            _balloonHandlerAttached = true;
+        }
+
+        string versionLabel = $"v{info.Version.Major}.{info.Version.Minor}.{info.Version.Build}";
+        _trayIcon.ShowBalloonTip(
+            10000,
+            $"Throughput {versionLabel} is ready",
+            "The update has been downloaded. Click here to install it.",
+            ToolTipIcon.Info);
     }
 
     /// <summary>

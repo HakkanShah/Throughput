@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.IO;
+using System.Net;
 using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text.Json;
@@ -22,6 +23,22 @@ public sealed record UpdateInfo(
     long AssetSize,
     string? Sha256);
 
+/// <summary>Stage of an in-progress update download.</summary>
+public enum UpdateStage
+{
+    Downloading,
+    Verifying
+}
+
+/// <summary>Progress of an update download, including transfer rate and ETA.</summary>
+public readonly record struct DownloadProgress(
+    UpdateStage Stage,
+    long BytesReceived,
+    long TotalBytes,
+    double Percent,
+    double BytesPerSecond,
+    TimeSpan? Remaining);
+
 /// <summary>
 /// Checks GitHub Releases for a newer version, downloads the right asset for how
 /// the app was installed, and applies the update.
@@ -36,7 +53,23 @@ public sealed class UpdateService : IDisposable
 
     public UpdateService()
     {
-        _http = new HttpClient { Timeout = TimeSpan.FromSeconds(100) };
+        // Force HTTP/1.1. Against GitHub, HttpClient otherwise negotiates HTTP/2,
+        // whose default 64KB stream window caps a download at roughly window/RTT -
+        // only ~250KB/s on a high-latency link, regardless of the actual bandwidth.
+        var handler = new SocketsHttpHandler
+        {
+            AutomaticDecompression = DecompressionMethods.None, // assets are already compressed
+            PooledConnectionLifetime = TimeSpan.FromMinutes(2)
+        };
+
+        _http = new HttpClient(handler)
+        {
+            // No global timeout: a large asset on a slow link would otherwise be
+            // aborted mid-download. Callers pass a CancellationToken instead.
+            Timeout = Timeout.InfiniteTimeSpan,
+            DefaultRequestVersion = HttpVersion.Version11,
+            DefaultVersionPolicy = HttpVersionPolicy.RequestVersionOrLower
+        };
         _http.DefaultRequestHeaders.Add("User-Agent", "Throughput-Updater");
         _http.DefaultRequestHeaders.Add("Accept", "application/vnd.github+json");
     }
@@ -58,10 +91,15 @@ public sealed class UpdateService : IDisposable
     /// </summary>
     public async Task<UpdateInfo?> CheckForUpdateAsync(CancellationToken ct = default)
     {
-        using var resp = await _http.GetAsync(ReleasesLatestUrl, ct);
+        // The client has no global timeout (downloads need to run long), so bound
+        // the metadata request itself.
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        timeout.CancelAfter(TimeSpan.FromSeconds(30));
+
+        using var resp = await _http.GetAsync(ReleasesLatestUrl, timeout.Token);
         resp.EnsureSuccessStatusCode();
 
-        string json = await resp.Content.ReadAsStringAsync(ct);
+        string json = await resp.Content.ReadAsStringAsync(timeout.Token);
         return EvaluateRelease(json, AppInfo.Current, IsInstalledMode);
     }
 
@@ -130,7 +168,7 @@ public sealed class UpdateService : IDisposable
     /// Downloads the update asset to a temp folder, reporting 0-100 progress, and
     /// verifies its SHA-256 against the digest GitHub reports. Returns the file path.
     /// </summary>
-    public async Task<string> DownloadAsync(UpdateInfo info, IProgress<double>? progress, CancellationToken ct = default)
+    public async Task<string> DownloadAsync(UpdateInfo info, IProgress<DownloadProgress>? progress, CancellationToken ct = default)
     {
         if (string.IsNullOrEmpty(info.AssetUrl) || string.IsNullOrEmpty(info.AssetName))
             throw new InvalidOperationException("No downloadable asset for this release.");
@@ -144,21 +182,54 @@ public sealed class UpdateService : IDisposable
             long total = resp.Content.Headers.ContentLength ?? info.AssetSize;
 
             await using var src = await resp.Content.ReadAsStreamAsync(ct);
-            await using var dst = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.None);
+            await using var dst = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.None,
+                bufferSize: 1 << 16, useAsync: true);
 
-            var buffer = new byte[81920];
+            var buffer = new byte[1 << 17]; // 128KB
             long readTotal = 0;
             int read;
+
+            var clock = Stopwatch.StartNew();
+            var lastReport = TimeSpan.Zero;
+            long lastReportBytes = 0;
+            double smoothedRate = 0;
+
             while ((read = await src.ReadAsync(buffer, ct)) > 0)
             {
                 await dst.WriteAsync(buffer.AsMemory(0, read), ct);
                 readTotal += read;
-                if (total > 0) progress?.Report(Math.Min(100, (double)readTotal / total * 100));
+
+                // Report ~5x/sec. Reporting per chunk would flood the UI thread.
+                var elapsed = clock.Elapsed;
+                if (progress == null || elapsed - lastReport < TimeSpan.FromMilliseconds(200)) continue;
+
+                double window = (elapsed - lastReport).TotalSeconds;
+                double rate = window > 0 ? (readTotal - lastReportBytes) / window : 0;
+                // Exponential smoothing keeps the rate readable instead of jittery.
+                smoothedRate = smoothedRate <= 0 ? rate : (smoothedRate * 0.7) + (rate * 0.3);
+
+                lastReport = elapsed;
+                lastReportBytes = readTotal;
+
+                progress.Report(BuildProgress(UpdateStage.Downloading, readTotal, total, smoothedRate));
             }
+
+            progress?.Report(BuildProgress(UpdateStage.Downloading, readTotal, total, smoothedRate));
         }
 
+        progress?.Report(new DownloadProgress(UpdateStage.Verifying, 0, 0, 100, 0, null));
         await VerifyHashAsync(path, info.Sha256, ct);
         return path;
+    }
+
+    private static DownloadProgress BuildProgress(UpdateStage stage, long received, long total, double rate)
+    {
+        double percent = total > 0 ? Math.Min(100, (double)received / total * 100) : 0;
+        TimeSpan? remaining = (total > received && rate > 0)
+            ? TimeSpan.FromSeconds((total - received) / rate)
+            : null;
+
+        return new DownloadProgress(stage, received, total, percent, rate, remaining);
     }
 
     internal static async Task VerifyHashAsync(string path, string? expected, CancellationToken ct)

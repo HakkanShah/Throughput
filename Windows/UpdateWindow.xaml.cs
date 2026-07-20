@@ -14,6 +14,7 @@ public partial class UpdateWindow : Window
 {
     private readonly UpdateInfo _info;
     private CancellationTokenSource? _cts;
+    private string? _downloadedFile;
 
     public UpdateWindow(UpdateInfo info)
     {
@@ -64,19 +65,42 @@ public partial class UpdateWindow : Window
         DownloadStatusText.Text = "Downloading update…";
 
         _cts = new CancellationTokenSource();
-        var progress = new Progress<double>(p =>
+        var progress = new Progress<DownloadProgress>(p =>
         {
-            DownloadProgress.Value = p;
-            DownloadPercentText.Text = $"{p:F0}%";
+            if (p.Stage == UpdateStage.Verifying)
+            {
+                DownloadProgress.Value = 100;
+                DownloadPercentText.Text = "100%";
+                DownloadStatusText.Text = "Verifying download…";
+                DownloadSizeText.Text = "Checking file integrity";
+                DownloadRateText.Text = "";
+                return;
+            }
+
+            DownloadProgress.Value = p.Percent;
+            DownloadPercentText.Text = $"{p.Percent:F0}%";
+            DownloadSizeText.Text = p.TotalBytes > 0
+                ? $"{FormatSize(p.BytesReceived)} of {FormatSize(p.TotalBytes)}"
+                : FormatSize(p.BytesReceived);
+
+            // The first moments cover TLS setup and TCP slow-start, so the rate and
+            // ETA are wildly pessimistic there. Wait until the transfer settles.
+            if (p.BytesReceived < 512 * 1024)
+            {
+                DownloadRateText.Text = "Starting…";
+            }
+            else
+            {
+                DownloadRateText.Text = p.Remaining is { } eta
+                    ? $"{FormatRate(p.BytesPerSecond)}  ·  {FormatEta(eta)}"
+                    : FormatRate(p.BytesPerSecond);
+            }
         });
 
         try
         {
-            string file = await App.Updater.DownloadAsync(_info, progress, _cts.Token);
-
-            DownloadStatusText.Text = "Installing… the app will restart.";
-            UpdateService.ApplyUpdate(file);
-            App.ExitApplication();
+            _downloadedFile = await App.Updater.DownloadAsync(_info, progress, _cts.Token);
+            ShowReadyToInstall();
         }
         catch (OperationCanceledException)
         {
@@ -92,6 +116,49 @@ public partial class UpdateWindow : Window
         }
     }
 
+    /// <summary>
+    /// Download finished: hand control back to the user rather than restarting the
+    /// app under them. If they minimized and went back to work, nudge via the tray.
+    /// </summary>
+    private void ShowReadyToInstall()
+    {
+        DownloadActions.Visibility = Visibility.Collapsed;
+        InstallActions.Visibility = Visibility.Visible;
+
+        if (WindowState == WindowState.Minimized || !IsActive)
+        {
+            App.NotifyUpdateReady(_info);
+        }
+    }
+
+    private void Install_Click(object sender, RoutedEventArgs e)
+    {
+        if (string.IsNullOrEmpty(_downloadedFile)) return;
+
+        InstallButton.IsEnabled = false;
+        ReadyText.Text = "Installing… the app will restart.";
+
+        try
+        {
+            UpdateService.ApplyUpdate(_downloadedFile);
+            App.ExitApplication();
+        }
+        catch (Exception ex)
+        {
+            InstallButton.IsEnabled = true;
+            ReadyText.Text = "Update downloaded and verified";
+            System.Windows.MessageBox.Show(this,
+                $"The update couldn't be installed:\n\n{ex.Message}",
+                "Install failed", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+    }
+
+    private void Minimize_Click(object sender, MouseButtonEventArgs e)
+    {
+        e.Handled = true;
+        WindowState = WindowState.Minimized;
+    }
+
     private void Later_Click(object sender, RoutedEventArgs e) => Close();
 
     private void Skip_Click(object sender, RoutedEventArgs e)
@@ -102,6 +169,19 @@ public partial class UpdateWindow : Window
     }
 
     private void ViewOnGitHub_Click(object sender, RoutedEventArgs e) => OpenUrl(_info.HtmlUrl);
+
+    private static string FormatSize(long bytes) =>
+        bytes >= 1L << 20 ? $"{bytes / 1048576.0:F1} MB" : $"{bytes / 1024.0:F0} KB";
+
+    private static string FormatRate(double bytesPerSecond) =>
+        bytesPerSecond >= 1048576
+            ? $"{bytesPerSecond / 1048576.0:F1} MB/s"
+            : $"{bytesPerSecond / 1024.0:F0} KB/s";
+
+    private static string FormatEta(TimeSpan eta) =>
+        eta.TotalSeconds < 60
+            ? $"{eta.TotalSeconds:F0}s left"
+            : $"{eta.TotalMinutes:F0}m {eta.Seconds}s left";
 
     private static void OpenUrl(string url)
     {

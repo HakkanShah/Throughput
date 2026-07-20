@@ -24,6 +24,7 @@ internal static class MarkdownRenderer
     private static readonly Brush CodeBg = Freeze(0x2A, 0x30, 0x3E);
     private static readonly Brush Accent = Freeze(0x5C, 0x9B, 0xFF);
     private static readonly Brush Rule = Freeze(0x33, 0x3B, 0x4A);
+    private static readonly Brush TableBg = Freeze(0x1C, 0x21, 0x2D);
     private static readonly FontFamily Mono = new("Consolas");
 
     private static readonly Regex InlineRx = new(
@@ -40,11 +41,23 @@ internal static class MarkdownRenderer
 
         var lines = markdown.Replace("\r\n", "\n").Replace("\r", "\n").Split('\n');
 
-        foreach (var raw in lines)
+        for (int i = 0; i < lines.Length; i++)
         {
-            string line = raw.TrimEnd();
+            string line = lines[i].TrimEnd();
 
             if (line.Length == 0) { target.Children.Add(new Border { Height = 5 }); continue; }
+
+            // A table is a "| a | b |" header followed by a "|---|---|" separator.
+            if (line.TrimStart().StartsWith("|") &&
+                i + 1 < lines.Length && IsTableSeparator(lines[i + 1]))
+            {
+                int end = i + 2;
+                while (end < lines.Length && lines[end].TrimStart().StartsWith("|")) end++;
+
+                target.Children.Add(BuildTable(lines, i, end));
+                i = end - 1;
+                continue;
+            }
 
             string t = line.Trim();
             if (t is "---" or "***" or "___")
@@ -78,6 +91,121 @@ internal static class MarkdownRenderer
 
             target.Children.Add(Paragraph(line));
         }
+    }
+
+    /// <summary>True for a "|---|:--:|" row that marks the line above as a table header.</summary>
+    private static bool IsTableSeparator(string line)
+    {
+        string t = line.Trim();
+        if (!t.Contains('-') || !t.Contains('|')) return false;
+
+        foreach (char c in t)
+        {
+            if (c != '|' && c != '-' && c != ':' && c != ' ') return false;
+        }
+        return true;
+    }
+
+    /// <summary>Splits "| a | b |" into its trimmed cells.</summary>
+    private static string[] ParseRow(string line)
+    {
+        string t = line.Trim();
+        if (t.StartsWith("|")) t = t[1..];
+        if (t.EndsWith("|")) t = t[..^1];
+
+        var cells = t.Split('|');
+        for (int i = 0; i < cells.Length; i++) cells[i] = cells[i].Trim();
+        return cells;
+    }
+
+    /// <summary>
+    /// Renders rows [start, end) as a grid: header row, a rule, then the data rows.
+    /// The separator row at start+1 is consumed, not drawn.
+    /// </summary>
+    private static FrameworkElement BuildTable(string[] lines, int start, int end)
+    {
+        var header = ParseRow(lines[start]);
+
+        var rows = new List<string[]>();
+        for (int i = start + 2; i < end; i++) rows.Add(ParseRow(lines[i]));
+
+        int columns = header.Length;
+        foreach (var r in rows) columns = Math.Max(columns, r.Length);
+
+        var grid = new Grid { Margin = new Thickness(0, 2, 0, 10) };
+        // First column carries the label and takes the slack; value columns hug.
+        for (int c = 0; c < columns; c++)
+        {
+            grid.ColumnDefinitions.Add(new ColumnDefinition
+            {
+                Width = c == 0 ? new GridLength(1, GridUnitType.Star) : GridLength.Auto
+            });
+        }
+
+        // header + rule + data rows
+        grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        foreach (var _ in rows) grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+
+        for (int c = 0; c < columns; c++)
+        {
+            var cell = TableCell(c < header.Length ? header[c] : string.Empty, isHeader: true, c);
+            Grid.SetRow(cell, 0);
+            Grid.SetColumn(cell, c);
+            grid.Children.Add(cell);
+        }
+
+        var rule = new Border
+        {
+            Height = 1,
+            Background = Rule,
+            Margin = new Thickness(0, 3, 0, 5)
+        };
+        Grid.SetRow(rule, 1);
+        Grid.SetColumn(rule, 0);
+        Grid.SetColumnSpan(rule, columns);
+        grid.Children.Add(rule);
+
+        for (int r = 0; r < rows.Count; r++)
+        {
+            for (int c = 0; c < columns; c++)
+            {
+                var cell = TableCell(c < rows[r].Length ? rows[r][c] : string.Empty, isHeader: false, c);
+                Grid.SetRow(cell, r + 2);
+                Grid.SetColumn(cell, c);
+                grid.Children.Add(cell);
+            }
+        }
+
+        return new Border
+        {
+            Background = TableBg,
+            BorderBrush = Rule,
+            BorderThickness = new Thickness(1),
+            CornerRadius = new CornerRadius(8),
+            Padding = new Thickness(12, 9, 12, 9),
+            Margin = new Thickness(0, 4, 0, 9),
+            Child = grid
+        };
+    }
+
+    private static FrameworkElement TableCell(string text, bool isHeader, int column)
+    {
+        var tb = new TextBlock
+        {
+            FontSize = 12,
+            Foreground = isHeader ? Heading : Body,
+            FontWeight = isHeader ? FontWeights.SemiBold : FontWeights.Normal,
+            TextWrapping = TextWrapping.Wrap,
+            LineHeight = 18,
+            // Value columns sit right of the label column; give them breathing room.
+            Margin = column == 0 ? new Thickness(0, 2, 14, 2) : new Thickness(14, 2, 0, 2),
+            HorizontalAlignment = column == 0
+                ? System.Windows.HorizontalAlignment.Left
+                : System.Windows.HorizontalAlignment.Right
+        };
+        AddInlines(tb.Inlines, text);
+        return tb;
     }
 
     private static TextBlock HeadingBlock(string text, double size, double top, double bottom)

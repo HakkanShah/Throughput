@@ -17,7 +17,7 @@
     <!-- Assembly Information -->
     <AssemblyName>Throughput</AssemblyName>
     <RootNamespace>Throughput</RootNamespace>
-    <Version>3.1.1</Version>
+    <Version>3.1.2</Version>
     <Authors>Hakkan</Authors>
     <Company></Company>
     <Product>Throughput</Product>

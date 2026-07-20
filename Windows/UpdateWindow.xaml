@@ -16,6 +16,34 @@
         TextOptions.TextRenderingMode="ClearType">
 
     <Window.Resources>
+        <!-- Rounded gradient progress bar with a soft glow -->
+        <Style x:Key="GlowProgressBar" TargetType="ProgressBar">
+            <Setter Property="Height" Value="8"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ProgressBar">
+                        <Border CornerRadius="5" Background="#26FFFFFF" ClipToBounds="True">
+                            <Grid x:Name="PART_Track">
+                                <Border x:Name="PART_Indicator" HorizontalAlignment="Left" CornerRadius="5">
+                                    <Border.Background>
+                                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                            <GradientStop Color="#4C8DFF" Offset="0"/>
+                                            <GradientStop Color="#7C6BFF" Offset="0.6"/>
+                                            <GradientStop Color="#3DDCA4" Offset="1"/>
+                                        </LinearGradientBrush>
+                                    </Border.Background>
+                                    <Border.Effect>
+                                        <DropShadowEffect Color="#4C8DFF" BlurRadius="14" ShadowDepth="0" Opacity="0.75"/>
+                                    </Border.Effect>
+                                </Border>
+                            </Grid>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <!-- Link-style text button -->
         <Style x:Key="LinkButton" TargetType="Button">
             <Setter Property="Foreground" Value="{StaticResource TextMuted}"/>
@@ -54,13 +82,21 @@
                 <Grid>
                     <TextBlock Text="Software Update" FontSize="12" FontWeight="SemiBold"
                                Foreground="{StaticResource TextDim}" VerticalAlignment="Center"/>
-                    <Border Width="30" Height="30" CornerRadius="8" Background="Transparent"
-                            HorizontalAlignment="Right" Cursor="Hand"
-                            MouseLeftButtonDown="Close_Click" ToolTip="Close">
-                        <TextBlock Text="&#xE8BB;" FontFamily="Segoe MDL2 Assets" FontSize="10"
-                                   Foreground="{StaticResource TextMuted}"
-                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                    </Border>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Border x:Name="MinimizeBtn" Width="30" Height="30" CornerRadius="8" Background="Transparent"
+                                Cursor="Hand" MouseLeftButtonDown="Minimize_Click"
+                                ToolTip="Minimize - the download keeps running">
+                            <TextBlock Text="&#xE921;" FontFamily="Segoe MDL2 Assets" FontSize="10"
+                                       Foreground="{StaticResource TextMuted}"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <Border Width="30" Height="30" CornerRadius="8" Background="Transparent"
+                                Cursor="Hand" MouseLeftButtonDown="Close_Click" ToolTip="Close">
+                            <TextBlock Text="&#xE8BB;" FontFamily="Segoe MDL2 Assets" FontSize="10"
+                                       Foreground="{StaticResource TextMuted}"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </StackPanel>
                 </Grid>
             </Border>
 
@@ -127,13 +163,44 @@
 
                 <!-- Download actions -->
                 <StackPanel x:Name="DownloadActions" Visibility="Collapsed">
-                    <TextBlock x:Name="DownloadStatusText" Text="Downloading update…" FontSize="12"
-                               FontWeight="SemiBold" Foreground="{StaticResource TextMuted}" Margin="0,0,0,10"/>
-                    <ProgressBar x:Name="DownloadProgress" Height="6" Minimum="0" Maximum="100"
-                                 Background="{StaticResource TrackBg}" Foreground="{StaticResource Accent}"
-                                 BorderThickness="0"/>
-                    <TextBlock x:Name="DownloadPercentText" Text="0%" FontSize="11" FontWeight="Bold"
-                               Foreground="{StaticResource TextDim}" HorizontalAlignment="Right" Margin="0,8,0,0"/>
+                    <Grid Margin="0,0,0,9">
+                        <TextBlock x:Name="DownloadStatusText" Text="Downloading update…" FontSize="12.5"
+                                   FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}"
+                                   VerticalAlignment="Center"/>
+                        <TextBlock x:Name="DownloadPercentText" Text="0%" FontSize="13" FontWeight="Bold"
+                                   Foreground="{StaticResource Accent}" HorizontalAlignment="Right"
+                                   VerticalAlignment="Center"/>
+                    </Grid>
+
+                    <ProgressBar x:Name="DownloadProgress" Style="{StaticResource GlowProgressBar}"
+                                 Minimum="0" Maximum="100"/>
+
+                    <Grid Margin="0,9,0,0">
+                        <TextBlock x:Name="DownloadSizeText" Text="" FontSize="11" FontWeight="SemiBold"
+                                   Foreground="{StaticResource TextDim}" VerticalAlignment="Center"/>
+                        <TextBlock x:Name="DownloadRateText" Text="" FontSize="11" FontWeight="SemiBold"
+                                   Foreground="{StaticResource TextDim}" HorizontalAlignment="Right"
+                                   VerticalAlignment="Center"/>
+                    </Grid>
+
+                    <TextBlock Text="You can minimize this window - the download continues in the background."
+                               FontSize="10.5" FontWeight="SemiBold" Foreground="{StaticResource TextDim}"
+                               TextWrapping="Wrap" Margin="0,10,0,0" Opacity="0.75"/>
+                </StackPanel>
+
+                <!-- Ready-to-install actions -->
+                <StackPanel x:Name="InstallActions" Visibility="Collapsed">
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                        <Ellipse Width="8" Height="8" Fill="{StaticResource Green}"
+                                 VerticalAlignment="Center" Margin="0,0,8,0"/>
+                        <TextBlock x:Name="ReadyText" Text="Update downloaded and verified"
+                                   FontSize="12.5" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}"
+                                   VerticalAlignment="Center"/>
+                    </StackPanel>
+                    <Button x:Name="InstallButton" Content="Install &amp; Restart"
+                            Style="{StaticResource PrimaryButton}" Click="Install_Click"/>
+                    <Button Content="Install later" Style="{StaticResource SecondaryButton}"
+                            Margin="0,10,0,0" Click="Later_Click"/>
                 </StackPanel>
             </Grid>
         </Grid>
